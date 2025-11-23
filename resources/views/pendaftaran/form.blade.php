@@ -558,6 +558,25 @@
 
         <form action="{{ route('pendaftaran.store') }}" method="POST" enctype="multipart/form-data" novalidate>
             @csrf
+
+            {{-- Flash error message --}}
+            @if(session('error'))
+                <div style="background: #fecaca; color: #9b2c2c; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; font-weight: 600;">
+                    {{ session('error') }}
+                </div>
+            @endif
+
+            {{-- Validation errors list --}}
+            @if ($errors->any())
+                <div style="background: #fee2e2; color: #b91c1c; padding: 16px 24px; border-radius: 12px; margin-bottom: 30px;">
+                    <strong>Terjadi kesalahan pada pengisian formulir:</strong>
+                    <ul style="margin-top: 8px; list-style-type: disc; padding-left: 20px;">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
             
             <div class="form-group">
                 <label for="nama_lengkap">
@@ -695,8 +714,11 @@
             });
         });
 
+        // Remove preventing native validation and form submit to allow Laravel errors display
+        // Instead keep current empty field check only without preventing submit
+
         form.addEventListener('submit', function(e) {
-            e.preventDefault(); // Always prevent default validation first
+            // Remove e.preventDefault() so form submits naturally and Laravel handles validation
 
             // Check for empty required fields
             const requiredFields = form.querySelectorAll('input[required]');
@@ -718,6 +740,7 @@
             });
 
             if (hasErrors) {
+                e.preventDefault(); // Prevent submit only if empty fields found
                 showAlert(emptyFields);
                 // Smooth scroll to first empty field with delay for better UX
                 setTimeout(() => {
@@ -731,14 +754,17 @@
                 return false;
             }
 
-            // If no errors, submit the form
+            // If no errors, change submit button UI
             const submitBtn = this.querySelector('button[type="submit"]');
-            submitBtn.innerHTML = '⏳ Memproses...';
-            submitBtn.style.background = 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)';
+            if (submitBtn) {
+                submitBtn.innerHTML = '⏳ Memproses...';
+                submitBtn.style.background = 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)';
+                submitBtn.disabled = true; // disable to prevent multiple submits
+            }
 
-            // Submit the form programmatically
-            this.submit();
+            // form submits naturally
         });
+
 
         // Function to get field label
         function getFieldLabel(field) {
