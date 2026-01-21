@@ -9,23 +9,37 @@ use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SuperAdminController;
+use App\Http\Controllers\UserAuthController;
 
 
 // Route baru untuk beranda
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
-// Informasi PKL
-Route::get('/informasi', [PendaftaranController::class, 'index'])->name('informasi');
+// Informasi PKL - Redirect to home since content is merged
+Route::get('/informasi', function () {
+    return redirect()->route('home');
+});
 
 
 // Google Auth Routes
 Route::get('/auth/google', [GoogleController::class, 'redirectToGoogle'])->name('auth.google');
 Route::get('/auth/google/callback', [GoogleController::class, 'handleGoogleCallback']);
 
+// User Auth Routes
+Route::get('/login', [UserAuthController::class, 'showLoginForm'])->name('login');
+Route::post('/login', [UserAuthController::class, 'login'])->name('login.post');
+Route::get('/register', [UserAuthController::class, 'showRegisterForm'])->name('register');
+Route::post('/register', [UserAuthController::class, 'register'])->name('register.post');
+Route::get('/forgot-password', [UserAuthController::class, 'showForgotPasswordForm'])->name('password.request');
+Route::post('/forgot-password', [UserAuthController::class, 'sendResetLink'])->name('password.email');
+Route::get('/reset-password/{token}', [UserAuthController::class, 'showResetPasswordForm'])->name('password.reset');
+Route::post('/reset-password', [UserAuthController::class, 'resetPassword'])->name('password.update');
+Route::post('/logout', [UserAuthController::class, 'logout'])->name('logout');
+
 // Profile Routes
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
-    Route::post('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/logout', [ProfileController::class, 'logout'])->name('logout');
 });
 
@@ -33,14 +47,10 @@ Route::middleware('auth')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('/daftar', [PendaftaranController::class, 'create'])->name('pendaftaran.create');
     Route::post('/daftar', [PendaftaranController::class, 'store'])->name('pendaftaran.store');
-    Route::get('/upload-surat-tanda-tangan', [PendaftaranController::class, 'uploadSuratTandaTangan'])->name('upload.surat.tanda.tangan');
-    Route::post('/upload-surat-tanda-tangan', [PendaftaranController::class, 'storeSuratTandaTangan'])->name('upload.surat.tanda.tangan.store');
-    Route::delete('/surat-upload/{id}', [PendaftaranController::class, 'deleteSuratUpload'])->name('surat.upload.delete');
-    // Rute untuk menampilkan halaman sukses setelah pendaftaran
-    Route::get('/pendaftaran-berhasil', function () {
-        return view('pendaftaran.pendaftaran_berhasil');
-    })->name('pendaftaran.pendaftaran_berhasil');
     Route::get('/surat-mitra-signed', [PendaftaranController::class, 'suratMitraSigned'])->name('pendaftaran.surat_mitra_signed');
+    Route::get('/surat-mitra/preview/{id}', [PendaftaranController::class, 'previewSuratMitra'])->name('surat.mitra.preview');
+    Route::get('/surat-mitra/download/{id}', [PendaftaranController::class, 'downloadSuratMitra'])->name('surat.mitra.download');
+    Route::get('/check-quota', [PendaftaranController::class, 'checkQuota'])->name('check.quota');
 });
 
 // API Route for quota checking
@@ -58,10 +68,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
 // Admin Routes (Protected)
 Route::prefix('admin')->name('admin.')->middleware(['auth.admin', 'auth.admin.approved'])->group(function () {
     Route::get('/', [AdminController::class, 'index'])->name('dashboard');
+    Route::get('/alert-message', [AdminController::class, 'alertMessage'])->name('alert_message');
+    Route::post('/alert-message/update', [AdminController::class, 'updateAlertMessage'])->name('alert_message.update');
+
     Route::get('/pendaftarans', [AdminController::class, 'listPendaftarans'])->name('pendaftarans.index');
-    Route::get('/surat-mitra', [AdminController::class, 'kelolaSuratMitra'])->name('surat_mitra');
-    Route::post('/surat-mitra/{id}/upload-signed', [AdminController::class, 'uploadSuratMitraSigned'])->name('surat_mitra.upload_signed');
-    Route::get('/pendaftarans/{id}', [AdminController::class, 'showPendaftaran'])->name('pendaftarans.show');
     Route::get('/pendaftarans/{id}/download-surat-tanda-tangan', [AdminController::class, 'downloadSuratTandaTangan'])->name('pendaftarans.download-surat-tanda-tangan');
     Route::post('/pendaftarans/{id}/upload-surat-balasan', [AdminController::class, 'uploadSuratBalasan'])->name('pendaftarans.uploadSuratBalasan');
     Route::delete('/pendaftarans/{id}/delete-surat-balasan', [AdminController::class, 'deleteSuratBalasan'])->name('pendaftarans.deleteSuratBalasan');
@@ -104,8 +114,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth.admin', 'auth.admin.ap
         Route::delete('/user-roles/admin/{adminId}', [SuperAdminController::class, 'deleteAdmin'])
             ->name('user_roles.delete_admin');
 
-        // Opsional: Route untuk tambah admin baru
-        Route::post('/user-roles', [SuperAdminController::class, 'createUser'])
-            ->name('user_roles.store');
-    });
+    // Opsional: Route untuk tambah admin baru
+    Route::post('/user-roles', [SuperAdminController::class, 'createUser'])
+        ->name('user_roles.store');
+});
 });

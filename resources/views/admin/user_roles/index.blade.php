@@ -1,563 +1,346 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kelola Role Pengguna - Super Admin</title>
-    <link rel="shortcut icon" href="{{ asset('image/bps.png') }}" type="image/x-icon">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+@extends('admin.layouts.app')
 
-        body {
-            background: linear-gradient(135deg, #fef3f4 0%, #fff7ed 50%, #f0f9ff 100%);
-            font-family: 'Inter', 'Segoe UI', Tahoma, sans-serif;
-            min-height: 100vh;
-            padding-bottom: 40px;
-            color: #1e293b;
-        }
+@section('title', 'Kelola Role Pengguna')
 
-        .navbar {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            padding: 20px 32px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .navbar-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .logo {
-            font-weight: 700;
-            font-size: 1.5em;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .back-link {
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 600;
-            padding: 8px 16px;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-            background: rgba(102, 126, 234, 0.1);
-        }
-
-        .back-link:hover {
-            background: rgba(102, 126, 234, 0.2);
-            transform: translateX(-4px);
-        }
-
-        .container {
-            max-width: 1300px;
-            margin: 40px auto;
-            padding: 0 24px;
-        }
-
-        .header-section {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 32px 40px;
-            margin-bottom: 24px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-        }
-
-        h1 {
-            font-size: 2.2rem;
-            color: #2d3748;
-            margin-bottom: 12px;
-            font-weight: 700;
-        }
-
-        .alert {
-            padding: 18px 24px;
-            border-radius: 12px;
-            margin-bottom: 24px;
-            font-weight: 600;
-            font-size: 1em;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            animation: slideIn 0.4s ease-out;
-        }
-
-        .alert-success {
-            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
-            color: #155724;
-            border-left: 4px solid #28a745;
-        }
-
-        .alert-error {
-            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
-            color: #721c24;
-            border-left: 4px solid #dc3545;
-        }
-
-        .alert-success::before { content: '✓'; }
-        .alert-error::before { content: '✕'; }
-
-        .table-container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 32px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            font-size: 0.95em;
-        }
-
-        th, td {
-            padding: 16px 14px;
-            text-align: left;
-            vertical-align: middle;
-        }
-
-        thead {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-
-        th {
-            color: #fff;
-            font-weight: 600;
-            font-size: 0.9em;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            white-space: nowrap;
-        }
-
-        tbody tr {
-            transition: all 0.3s ease;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        tbody tr:hover {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
-            transform: scale(1.01);
-        }
-
-        .role-badge {
-            display: inline-block;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-weight: 700;
-            font-size: 0.85em;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .role-user {
-            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
-            color: #ffffff;
-            box-shadow: 0 2px 8px rgba(9, 132, 227, 0.4);
-        }
-
-        .role-admin {
-            background: linear-gradient(135deg, #55efc4 0%, #00b894 100%);
-            color: #ffffff;
-            box-shadow: 0 2px 8px rgba(0, 184, 148, 0.4);
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: flex-start;
-        }
-
-        .action-buttons form {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-right: 12px;
-        }
-
-        .action-buttons form select {
-            min-width: 100px;
-            padding: 6px 10px;
-            border-radius: 6px;
-            border: 1px solid #ddd;
-            font-size: 0.85em;
-            background: #fff;
-        }
-
-        .action-buttons form select:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
-        }
-
-        .btn-update {
-            padding: 8px 16px;
-            border-radius: 8px;
-            border: none;
-            font-size: 0.9em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #fff;
-        }
-
-        .btn-update:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-delete {
-            padding: 8px 16px;
-            border-radius: 8px;
-            border: none;
-            font-size: 0.9em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            background: linear-gradient(135deg, #ff7675 0%, #d63031 100%);
-            color: #fff;
-        }
-
-        .btn-delete:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(214, 48, 49, 0.4);
-        }
-
-        select {
-            padding: 6px 12px;
-            border-radius: 6px;
-            border: 1px solid #ddd;
-            font-size: 0.9em;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #718096;
-        }
-
-        .empty-state-icon {
-            font-size: 4rem;
-            margin-bottom: 16px;
-            opacity: 0.5;
-        }
-
-        .empty-state-text {
-            font-size: 1.1rem;
-            font-weight: 500;
-        }
-
-        /* Modal Konfirmasi */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            animation: fadeIn 0.3s ease;
-        }
-
-        .modal-content {
-            background-color: #fff;
-            margin: 15% auto;
-            padding: 32px;
-            border-radius: 16px;
-            width: 90%;
-            max-width: 450px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-            animation: slideIn 0.3s ease;
-        }
-
-        .modal-header {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 16px;
-            color: #2d3748;
-        }
-
-        .modal-body {
-            margin-bottom: 24px;
-            color: #4a5568;
-            line-height: 1.6;
-        }
-
-        .modal-footer {
-            display: flex;
-            gap: 12px;
-            justify-content: flex-end;
-        }
-
-        .btn-cancel {
-            padding: 10px 20px;
-            border-radius: 8px;
-            border: 1px solid #cbd5e0;
-            background: #fff;
-            color: #4a5568;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .btn-cancel:hover {
-            background: #f7fafc;
-        }
-
-        .btn-confirm {
-            padding: 10px 20px;
-            border-radius: 8px;
-            border: none;
-            background: linear-gradient(135deg, #ff7675 0%, #d63031 100%);
-            color: #fff;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .btn-confirm:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(214, 48, 49, 0.4);
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        .table-container {
-            animation: fadeIn 0.6s ease-out;
-        }
-
-        @media (max-width: 1024px) {
-            .container { padding: 0 16px; }
-            .header-section { padding: 24px 28px; }
-            .table-container { padding: 20px; overflow-x: scroll; }
-            table { min-width: 1000px; }
-        }
-
-        @media (max-width: 768px) {
-            h1 { font-size: 1.8rem; }
-            .navbar { padding: 16px 20px; }
-            .header-section { padding: 20px 24px; }
-            th, td { padding: 12px 10px; font-size: 0.85em; }
-            .action-buttons { flex-direction: column; }
-        }
-
-        @media (max-width: 480px) {
-            .logo { font-size: 1.2em; }
-            h1 { font-size: 1.5rem; }
-            .table-container { padding: 16px; }
-        }
-    </style>
-</head>
-<body>
-    <div class="navbar">
-        <div class="navbar-content">
-            <span class="logo">✦ Super Admin Dashboard</span>
-            <a href="{{ route('admin.dashboard') }}" class="back-link">← Kembali</a>
+{{-- NAVBAR BRANDING: Simpel & Bersih --}}
+@section('navbar-branding')
+    <div style="display: flex; align-items: center; gap: 12px;">
+        {{-- Icon SVG Modern --}}
+        <div style="width: 36px; height: 36px; background: #eff6ff; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #2563eb;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="8.5" cy="7" r="4"></circle>
+                <line x1="20" y1="8" x2="20" y2="14"></line>
+                <line x1="23" y1="11" x2="17" y2="11"></line>
+            </svg>
+        </div>
+        <div style="display: flex; flex-direction: column;">
+            <span style="font-size: 1rem; font-weight: 700; color: #0f172a; line-height: 1.2;">Access Control</span>
+            <span style="font-size: 0.75rem; color: #64748b; font-weight: 500;">User & Admin Roles</span>
         </div>
     </div>
+@endsection
 
-    <div class="container">
-        <div class="header-section">
-            <h1>👥 Kelola Role Pengguna</h1>
-            <p>Kelola peran pengguna dalam sistem</p>
+{{-- NAVBAR ACTIONS --}}
+@section('navbar-actions')
+    <a href="{{ route('admin.dashboard') }}" 
+           style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: white; color: #64748b; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 0.9rem; border: 1px solid #e2e8f0; transition: all 0.2s;"
+           onmouseover="this.style.background='#f8fafc'; this.style.color='#334155';"
+           onmouseout="this.style.background='white'; this.style.color='#64748b';">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            <span>Dashboard</span>
+        </a>
+@endsection
+
+@section('content')
+    <style>
+        /* Modern Alert Style */
+        .alert-modern {
+            background: white;
+            border-left: 4px solid;
+            padding: 16px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-bottom: 24px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            animation: slideIn 0.3s ease-out;
+        }
+        .alert-success { border-color: #10b981; }
+        .alert-error { border-color: #ef4444; }
+        .alert-icon { margin-top: 2px; }
+
+        /* Card Container */
+        .card-clean {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            overflow: hidden;
+        }
+
+        /* Table Styling - Clean & Professional */
+        .table-clean { width: 100%; border-collapse: separate; border-spacing: 0; }
+        .table-clean th {
+            background: #f8fafc;
+            color: #64748b;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 14px 24px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: left;
+        }
+        .table-clean td {
+            padding: 16px 24px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+            color: #334155;
+            font-size: 0.9rem;
+        }
+        .table-clean tr:last-child td { border-bottom: none; }
+        .table-clean tr:hover td { background: #f8fafc; }
+
+        /* Badges */
+        .badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 4px 10px; border-radius: 99px;
+            font-size: 0.75rem; font-weight: 600;
+        }
+        /* Role Colors */
+        .badge-super { background: #fff7ed; color: #9a3412; border: 1px solid #ffedd5; }
+        .badge-admin { background: #eff6ff; color: #1e40af; border: 1px solid #dbeafe; }
+        .badge-user  { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+        
+        /* Status Colors */
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+        .status-active { background: #10b981; }
+        .status-pending { background: #f59e0b; }
+        .status-rejected { background: #ef4444; }
+
+        /* Form Elements */
+        .select-clean {
+            padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px;
+            font-size: 0.85rem; color: #334155; outline: none; bg: white;
+            transition: border 0.2s;
+        }
+        .select-clean:focus { border-color: #3b82f6; }
+
+        /* Buttons */
+        .btn-icon {
+            width: 32px; height: 32px; border-radius: 6px;
+            display: inline-flex; align-items: center; justify-content: center;
+            border: none; cursor: pointer; transition: all 0.2s;
+            color: white;
+        }
+        .btn-save { background: #3b82f6; } .btn-save:hover { background: #2563eb; }
+        .btn-check { background: #10b981; } .btn-check:hover { background: #059669; }
+        .btn-cross { background: #f59e0b; } .btn-cross:hover { background: #d97706; }
+        .btn-trash { background: white; border: 1px solid #fee2e2; color: #ef4444; } 
+        .btn-trash:hover { background: #fef2f2; border-color: #fecaca; }
+
+        /* Modal */
+        .modal { display: none; position: fixed; z-index: 999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); }
+        .modal-box { 
+            background: white; margin: 10% auto; padding: 32px; width: 400px; 
+            border-radius: 16px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+            animation: slideUp 0.3s;
+        }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .avatar-circle {
+            width: 38px; height: 38px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 600; font-size: 0.9rem; color: white;
+            background: linear-gradient(135deg, #64748b, #475569);
+        }
+        .avatar-img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; }
+    </style>
+
+    {{-- ALERT MESSAGES (Redesigned) --}}
+    @if(session('success'))
+        <div class="alert-modern alert-success" id="alert-success">
+            <div class="alert-icon" style="color: #10b981;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            </div>
+            <div>
+                <h4 style="font-size: 0.9rem; font-weight: 600; color: #065f46; margin-bottom: 2px;">Berhasil</h4>
+                <p style="font-size: 0.85rem; color: #064e3b; margin: 0;">{{ session('success') }}</p>
+            </div>
         </div>
+    @endif
 
-        @if(session('success'))
-            <div class="alert alert-success">{{ session('success') }}</div>
-        @endif
+    @if(session('error'))
+        <div class="alert-modern alert-error" id="alert-error">
+            <div class="alert-icon" style="color: #ef4444;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            </div>
+            <div>
+                <h4 style="font-size: 0.9rem; font-weight: 600; color: #991b1b; margin-bottom: 2px;">Terjadi Kesalahan</h4>
+                <p style="font-size: 0.85rem; color: #7f1d1d; margin: 0;">{{ session('error') }}</p>
+            </div>
+        </div>
+    @endif
 
-        @if(session('error'))
-            <div class="alert alert-error">{{ session('error') }}</div>
-        @endif
-
-        <div class="table-container">
-            <table>
+    {{-- MAIN CONTENT --}}
+    <div class="card-clean">
+        <div style="overflow-x: auto;">
+            <table class="table-clean">
                 <thead>
                     <tr>
-                        <th>No</th>
-                        <th>Nama</th>
-                        <th>Email</th>
-                        <th>Type</th>
-                        <th>Role Saat Ini</th>
-                        <th>Status</th>
-                        <th>Aksi</th>
+                        <th width="5%">No</th>
+                        <th width="35%">User Profile</th>
+                        <th width="20%">Role & Status</th>
+                        <th width="30%">Access Control</th>
+                        <th width="10%" style="text-align: center;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($allUsers as $index => $item)
-                        <tr>
-                            <td>{{ $loop->iteration }}</td>
-                            <td><strong>{{ $item['name'] }}</strong></td>
-                            <td>{{ $item['email'] }}</td>
-                            <td>
-                                <span class="role-badge role-{{ $item['type'] }}">
-                                    {{ ucfirst($item['type']) }}
-                                </span>
-                            </td>
-                            <td>
-                                <span class="role-badge role-{{ $item['role'] }}">
-                                    {{ ucfirst($item['role']) }}
-                                </span>
-                            </td>
-
-                            <td>
-                                @if($item['type'] === 'admin')
-                                    @if($item['status'] === 'pending')
-                                        <span class="role-badge" style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); color: #fff;">
-                                            Menunggu Persetujuan
-                                        </span>
-                                    @elseif($item['status'] === 'approved')
-                                        <span class="role-badge" style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); color: #fff;">
-                                            Disetujui
-                                        </span>
-                                    @else
-                                        <span class="role-badge" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: #fff;">
-                                            Ditolak
-                                        </span>
-                                    @endif
+                    @foreach($allUsers as $index => $user)
+                    <tr>
+                        <td style="color: #94a3b8; text-align: center;">{{ $index + 1 }}</td>
+                        
+                        {{-- User Info --}}
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                @if(!empty($user['avatar']))
+                                    <img src="{{ asset('storage/' . $user['avatar']) }}" alt="Av" class="avatar-img">
                                 @else
-                                    <span class="role-badge" style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); color: #fff;">
-                                        Aktif
-                                    </span>
+                                    <div class="avatar-circle">
+                                        {{ strtoupper(substr($user['name'], 0, 1)) }}
+                                    </div>
                                 @endif
-                            </td>
-                            <td>
-                                <div class="action-buttons">
-                                    @if($item['type'] === 'user')
-                                        <form action="{{ route('admin.user_roles.update_user', $item['id']) }}" method="POST">
-                                            @csrf
-                                            @method('PUT')
-                                            <select name="role" required>
-                                                <option value="user" {{ $item['role'] === 'user' ? 'selected' : '' }}>User</option>
-                                                <option value="admin" {{ $item['role'] === 'admin' ? 'selected' : '' }}>Admin</option>
-                                            </select>
-                                            <button type="submit" class="btn-update">Update Role</button>
-                                        </form>
-                                        <button type="button" class="btn-delete" onclick="confirmDelete('{{ $item['id'] }}', '{{ $item['name'] }}', 'user')">Hapus</button>
-                                    @else
-                                        <form action="{{ route('admin.user_roles.update_admin', $item['id']) }}" method="POST">
-                                            @csrf
-                                            @method('PUT')
-                                            <select name="role" required>
-                                                <option value="admin" {{ $item['role'] === 'admin' ? 'selected' : '' }}>Admin</option>
-                                                <option value="super_admin" {{ $item['role'] === 'super_admin' ? 'selected' : '' }}>Super Admin</option>
-                                            </select>
-                                            <button type="submit" class="btn-update">Update Role</button>
-                                        </form>
-                                        @if($item['model']->status === 'pending')
-                                            <form action="{{ route('admin.user_roles.approve_admin', $item['id']) }}" method="POST" style="display: inline;">
-                                                @csrf
-                                                <button type="submit" class="btn-update" style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);">Setujui</button>
-                                            </form>
-                                            <form action="{{ route('admin.user_roles.reject_admin', $item['id']) }}" method="POST" style="display: inline;">
-                                                @csrf
-                                                <button type="submit" class="btn-delete" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">Tolak</button>
-                                            </form>
+                                <div>
+                                    <div style="font-weight: 600; color: #1e293b;">{{ $user['name'] }}</div>
+                                    <div style="font-size: 0.8rem; color: #64748b;">{{ $user['email'] }}</div>
+                                </div>
+                            </div>
+                        </td>
+
+                        {{-- Role & Status --}}
+                        <td>
+                            <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start;">
+                                @if($user['role'] == 'super_admin')
+                                    <span class="badge badge-super">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                        Super Admin
+                                    </span>
+                                @elseif($user['role'] == 'admin')
+                                    <span class="badge badge-admin">Admin</span>
+                                @else
+                                    <span class="badge badge-user">User</span>
+                                @endif
+
+                                @if($user['type'] === 'admin')
+                                    <div style="font-size: 0.75rem; color: #64748b; margin-left: 4px;">
+                                        @if($user['status'] == 'pending')
+                                            <span class="status-dot status-pending"></span>Pending
+                                        @elseif($user['status'] == 'approved')
+                                            <span class="status-dot status-active"></span>Active
+                                        @elseif($user['status'] == 'rejected')
+                                            <span class="status-dot status-rejected"></span>Rejected
                                         @endif
-                                        <button type="button" class="btn-delete" onclick="confirmDelete('{{ $item['id'] }}', '{{ $item['name'] }}', 'admin')">Hapus</button>
-                                    @endif
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="7">
-                                <div class="empty-state">
-                                    <div class="empty-state-icon">👥</div>
-                                    <div class="empty-state-text">Belum ada pengguna atau admin terdaftar</div>
-                                </div>
-                            </td>
-                        </tr>
-                    @endforelse
+                                    </div>
+                                @endif
+                            </div>
+                        </td>
+
+                        {{-- Action Logic --}}
+                        <td>
+                            @if($user['role'] === 'super_admin')
+                                <span style="font-size: 0.8rem; color: #cbd5e1; font-style: italic;">Full Access Granted</span>
+                            @else
+                                {{-- Approval Buttons --}}
+                                @if($user['type'] === 'admin' && $user['status'] === 'pending')
+                                    <div style="display: flex; gap: 6px;">
+                                        <form action="{{ route('admin.user_roles.approve_admin', $user['id']) }}" method="POST">
+                                            @csrf
+                                            <button type="submit" class="btn-icon btn-check" title="Approve">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                            </button>
+                                        </form>
+                                        <form action="{{ route('admin.user_roles.reject_admin', $user['id']) }}" method="POST">
+                                            @csrf
+                                            <button type="submit" class="btn-icon btn-cross" title="Reject">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                            </button>
+                                        </form>
+                                    </div>
+                                @else
+                                    {{-- Role Update Form --}}
+                                    <form action="{{ $user['type'] === 'admin' ? route('admin.user_roles.update_admin', $user['id']) : route('admin.user_roles.update_user', $user['id']) }}" method="POST" style="display: flex; gap: 8px; align-items: center;">
+                                        @csrf
+                                        @method('PUT')
+                                        
+                                        <select name="role" class="select-clean">
+                                            <option value="user" {{ $user['role'] == 'user' ? 'selected' : '' }}>User</option>
+                                            <option value="admin" {{ $user['role'] == 'admin' ? 'selected' : '' }}>Admin</option>
+                                        </select>
+                                        
+                                        <button type="submit" class="btn-icon btn-save" title="Save Role">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                                        </button>
+                                    </form>
+                                @endif
+                            @endif
+                        </td>
+
+                        {{-- Delete Button --}}
+                        <td style="text-align: center;">
+                            @if($user['role'] !== 'super_admin')
+                                <form action="{{ $user['type'] === 'admin' ? route('admin.user_roles.delete_admin', $user['id']) : route('admin.user_roles.delete_user', $user['id']) }}" method="POST">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="button" class="btn-icon btn-trash" onclick="showDeleteModal(event, '{{ $user['name'] }}', '{{ $user['email'] }}', '{{ $user['role'] }}')" title="Delete User">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                    </button>
+                                </form>
+                            @endif
+                        </td>
+                    </tr>
+                    @endforeach
                 </tbody>
             </table>
         </div>
     </div>
 
-    <!-- Modal Konfirmasi Hapus -->
+    {{-- MODAL DELETE --}}
     <div id="deleteModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">⚠️ Konfirmasi Hapus</div>
-            <div class="modal-body">
-                Apakah Anda yakin ingin menghapus pengguna <strong id="userName"></strong>?
-                <br><br>
-                <span style="color: #dc3545; font-weight: 600;">Tindakan ini tidak dapat dibatalkan!</span>
+        <div class="modal-box">
+            <div style="width: 50px; height: 50px; background: #fef2f2; color: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-cancel" onclick="closeModal()">Batal</button>
-                <form id="deleteForm" method="POST" style="display: inline;">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="btn-confirm">Ya, Hapus</button>
-                </form>
+            <h3 style="font-size: 1.1rem; font-weight: 700; color: #1e293b; margin-bottom: 8px;">Delete User?</h3>
+            <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 24px;">
+                Are you sure you want to delete <strong id="deleteName"></strong>? <br>
+                <span style="font-size: 0.8rem;">This action cannot be undone.</span>
+            </p>
+            <div style="display: flex; justify-content: center; gap: 12px;">
+                <button onclick="closeModal('deleteModal')" style="padding: 10px 20px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; color: #64748b; font-weight: 600; cursor: pointer;">Cancel</button>
+                <button id="confirmDeleteBtn" style="padding: 10px 20px; border-radius: 8px; border: none; background: #ef4444; color: white; font-weight: 600; cursor: pointer;">Yes, Delete</button>
             </div>
+            <div id="hiddenData" style="display:none;"></div>
         </div>
     </div>
 
+    {{-- SCRIPT --}}
     <script>
-        function confirmDelete(id, name, type) {
-            document.getElementById('userName').textContent = name;
-            if (type === 'user') {
-                document.getElementById('deleteForm').action = `/admin/user-roles/user/${id}`;
-            } else {
-                document.getElementById('deleteForm').action = `/admin/user-roles/admin/${id}`;
-            }
-            document.getElementById('deleteModal').style.display = 'block';
-        }
-
-        function closeModal() {
-            document.getElementById('deleteModal').style.display = 'none';
-        }
-
-        // Tutup modal ketika klik di luar modal
-        window.onclick = function(event) {
-            const modal = document.getElementById('deleteModal');
-            if (event.target === modal) {
-                closeModal();
-            }
-        }
-
-        // Auto hide alert after 5 seconds
+        // Auto-dismiss alert
         setTimeout(() => {
-            const alert = document.querySelector('.alert');
-            if (alert) {
-                alert.style.opacity = '0';
-                setTimeout(() => alert.remove(), 300);
-            }
+            const alerts = document.querySelectorAll('.alert-modern');
+            alerts.forEach(alert => {
+                alert.style.transition = "opacity 0.5s ease";
+                alert.style.opacity = 0;
+                setTimeout(() => alert.remove(), 500);
+            });
         }, 5000);
+
+        function showDeleteModal(event, name, email, role) {
+            event.preventDefault();
+            document.getElementById('deleteName').innerText = name;
+            
+            const modal = document.getElementById('deleteModal');
+            modal.style.display = 'block';
+
+            const form = event.target.closest('form');
+            document.getElementById('confirmDeleteBtn').onclick = function() {
+                form.submit();
+            };
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
     </script>
-</body>
-</html>
+@endsection

@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Response;
 use Carbon\Carbon;
+use App\Models\AlertMessage;
 
 class AdminController extends Controller
 {
@@ -32,14 +33,14 @@ class AdminController extends Controller
 
     public function listPendaftarans(Request $request)
     {
-        $query = Pendaftaran::orderBy('created_at', 'desc');
+        $query = Pendaftaran::with('user')->orderBy('created_at', 'desc');
 
         if ($request->has('filter') && $request->filter === 'surat_mitra') {
             $query->whereNotNull('surat_tanda_tangan');
         }
 
-        $pendaftarans = $query->get();
-        return view('admin.pendaftarans.index', compact('pendaftarans'));
+        $pendaftarans = $query->paginate(10); // Paginate with 10 items per page
+        return view('admin.pendaftarans.index', compact('pendaftarans', 'request'));
     }
 
     public function kelolaSuratMitra()
@@ -72,13 +73,22 @@ class AdminController extends Controller
 
             // Update pendaftaran surat_mitra_signed field for notification
             $suratUpload->pendaftaran->surat_mitra_signed = $path;
+
+            // Set status to approved when uploading surat mitra signed (moved logic from setuju button)
+            $statusLama = $suratUpload->pendaftaran->status;
+            $suratUpload->pendaftaran->status = 'approved';
             $suratUpload->pendaftaran->save();
 
             // Kirim notifikasi email ke calon PKL
             $suratUpload->pendaftaran->notify(new \App\Notifications\SuratMitraSignedNotification($suratUpload->pendaftaran));
+
+            // Kirim notifikasi status approved jika status berubah
+            if ($statusLama !== 'approved') {
+                $suratUpload->pendaftaran->notify(new \App\Notifications\PendaftaranStatusNotification($suratUpload->pendaftaran, 'approved'));
+            }
         }
 
-        return redirect()->route('admin.surat_mitra')->with('success', 'Surat mitra yang sudah ditandatangani berhasil diupload.');
+        return redirect()->route('admin.surat_mitra')->with('success', 'Surat mitra yang sudah ditandatangani berhasil diupload dan status pendaftaran telah diubah menjadi Diterima.');
     }
 
     public function showPendaftaran($id)
@@ -172,6 +182,17 @@ class AdminController extends Controller
         }
 
         return response()->download(storage_path('app/public/' . $pendaftaran->surat_tanda_tangan));
+    }
+
+    public function downloadSuratKeterangan($id)
+    {
+        $pendaftaran = Pendaftaran::findOrFail($id);
+
+        if (!$pendaftaran->surat_keterangan_pkl || !Storage::disk('public')->exists($pendaftaran->surat_keterangan_pkl)) {
+            return redirect()->route('admin.pendaftarans.index')->with('error', 'File surat keterangan PKL tidak ditemukan.');
+        }
+
+        return response()->download(storage_path('app/public/' . $pendaftaran->surat_keterangan_pkl));
     }
 
     public function destroyPendaftaran(Pendaftaran $pendaftaran) // Gunakan Route Model Binding
@@ -288,7 +309,7 @@ class AdminController extends Controller
     public function uploadSuratBalasan(Request $request, $id)
 {
     $request->validate([
-        'surat_balasan' => 'required|file|mimes:pdf|max:2048',
+        'surat_balasan_pkl' => 'required|file|mimes:pdf|max:2048',
     ]);
 
     $pendaftaran = Pendaftaran::findOrFail($id);
@@ -299,17 +320,22 @@ class AdminController extends Controller
     }
 
     // Upload file baru
-    $file = $request->file('surat_balasan');
+    $file = $request->file('surat_balasan_pkl');
     $path = $file->store('surat_balasan', 'public');
 
+    // Set status menjadi approved ketika upload surat
+    $statusLama = $pendaftaran->status;
     $pendaftaran->update([
         'surat_balasan_pkl' => $path,
+        'status' => 'approved',
     ]);
 
-    // Kirim notifikasi email ke calon PKL
-    $pendaftaran->notify(new \App\Notifications\SuratBalasanNotification($pendaftaran));
+    // Kirim notifikasi email ke calon PKL jika status berubah menjadi approved
+    if ($statusLama !== 'approved') {
+        $pendaftaran->notify(new \App\Notifications\SuratBalasanNotification($pendaftaran));
+    }
 
-    return redirect()->back()->with('success', 'Surat balasan PKL berhasil diupload.');
+    return response()->json(['success' => true, 'message' => 'Surat berhasil diupload dan status pendaftaran telah diubah menjadi Diterima.']);
 }
 
 public function deleteSuratBalasan($id)
@@ -328,4 +354,31 @@ public function deleteSuratBalasan($id)
 
     return redirect()->back()->with('error', 'Tidak ada surat balasan untuk dihapus.');
 }
+
+    public function alertMessage()
+    {
+        $alertMessage = AlertMessage::where('key', 'pkl_warning')->first();
+        return view('admin.alert_message', compact('alertMessage'));
+    }
+
+    public function updateAlertMessage(Request $request)
+    {
+        $request->validate([
+            'message' => 'required|string|max:1000',
+        ]);
+
+        // PERBAIKAN UTAMA DI SINI:
+        // Gunakan boolean() agar membaca nilai "1", "0", "on", atau null dengan benar.
+        $isActive = $request->boolean('is_active');
+
+        AlertMessage::updateOrCreate(
+            ['key' => 'pkl_warning'],
+            [
+                'message' => $request->message,
+                'is_active' => $isActive
+            ]
+        );
+
+        return redirect()->route('admin.alert_message')->with('success', 'Konfigurasi pesan berhasil diperbarui.');
+    }
 }

@@ -1,686 +1,340 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kelola Kuota PKL</title>
-    <link rel="shortcut icon" href="{{ asset('image/bps.png') }}" type="image/x-icon">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body {
-            background: linear-gradient(135deg, #fef3f4 0%, #fff7ed 50%, #f0f9ff 100%);
-            font-family: 'Inter', 'Segoe UI', Tahoma, sans-serif;
-            min-height: 100vh;
-            padding-bottom: 40px;
-            color: #1e293b;
-        }
-        
-        /* Navbar */
-        .navbar { 
-            background: #ffffff;
-            padding: 20px 32px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            border-bottom: 1px solid #e8ecf1;
-        }
-        
-        .navbar-content {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .logo {
-            font-weight: 700;
-            font-size: 1.4em;
-            color: #2563eb;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        
-        .back-link {
-            color: #2563eb;
-            text-decoration: none;
-            font-weight: 600;
-            padding: 10px 20px;
-            border-radius: 10px;
-            transition: all 0.3s ease;
-            background: #eff6ff;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .back-link:hover {
-            background: #dbeafe;
-            transform: translateX(-4px);
-        }
-        
-        .back-link::before {
-            content: '←';
-            font-size: 1.2em;
-        }
-        
-        /* Container */
-        .container {
-            max-width: 1000px;
-            margin: 32px auto;
-            padding: 0 24px;
-        }
-        
-        /* Header Section */
-        .header-section {
-            background: #ffffff;
-            border-radius: 16px;
-            padding: 32px;
-            margin-bottom: 24px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-            border: 1px solid #e8ecf1;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-        
-        h1 {
-            font-size: 2rem;
-            color: #1e293b;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        
-        .btn-group {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-        
-        .btn {
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
-            color: #fff;
-            border: none;
-            border-radius: 10px;
-            padding: 12px 24px;
-            font-weight: 600;
-            font-size: 0.95em;
-            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
-            text-decoration: none;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
-        }
-        
-        .btn-add {
-            background: linear-gradient(135deg, #10b981, #059669);
-            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
-        }
-        
-        .btn-add:hover {
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
-        }
-        
-        .btn-add::before {
-            content: '➕';
-        }
-        
-        .btn-edit {
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
-            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
-            padding: 8px 16px;
-            font-size: 0.9em;
-        }
-        
-        .btn-edit:hover {
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
-        }
-        
-        .btn-edit::before {
-            content: '✏️';
-        }
-        
-        .btn-delete {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
-            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
-            padding: 8px 16px;
-            font-size: 0.9em;
-        }
-        
-        .btn-delete:hover {
-            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
-        }
-        
-        .btn-delete::before {
-            content: '🗑️';
-        }
-        
-        /* Modern Alert */
-        .alert-success {
-            padding: 18px 24px;
-            background: linear-gradient(135deg, #ecfdf5, #d1fae5);
-            color: #065f46;
-            border-radius: 14px;
-            font-weight: 500;
-            margin-bottom: 24px;
-            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
-            display: flex;
-            align-items: flex-start;
-            gap: 14px;
-            border: 2px solid #6ee7b7;
-            animation: slideInAlert 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .alert-success::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 5px;
-            background: linear-gradient(180deg, #10b981, #059669);
-            animation: progressBar 3s ease-out;
-        }
-        
-        .alert-success::after {
-            content: '✓';
-            font-size: 1.5em;
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #6ee7b7, #10b981);
-            color: #ffffff;
-            animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-        }
-        
-        /* Stats Card */
-        .stats-card {
-            background: #ffffff;
-            border-radius: 16px;
-            padding: 32px;
-            margin-bottom: 24px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-            border: 1px solid #e8ecf1;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 24px;
-            animation: fadeIn 0.4s ease-out;
-        }
-        
-        .stat-item {
-            text-align: center;
-            padding: 20px;
-            border-radius: 12px;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .stat-item::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            border-radius: 12px 12px 0 0;
-        }
-        
-        .stat-item:nth-child(1) {
-            background: linear-gradient(135deg, #eff6ff, #dbeafe);
-        }
-        
-        .stat-item:nth-child(1)::before {
-            background: linear-gradient(90deg, #3b82f6, #2563eb);
-        }
-        
-        .stat-item:nth-child(2) {
-            background: linear-gradient(135deg, #fef3c7, #fde68a);
-        }
-        
-        .stat-item:nth-child(2)::before {
-            background: linear-gradient(90deg, #f59e0b, #d97706);
-        }
-        
-        .stat-item:nth-child(3) {
-            background: linear-gradient(135deg, #fee2e2, #fecaca);
-        }
-        
-        .stat-item:nth-child(3)::before {
-            background: linear-gradient(90deg, #ef4444, #dc2626);
-        }
-        
-        .stat-item:nth-child(4) {
-            background: linear-gradient(135deg, #ecfdf5, #d1fae5);
-        }
-        
-        .stat-item:nth-child(4)::before {
-            background: linear-gradient(90deg, #10b981, #059669);
-        }
-        
-        .stat-item:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-        
-        .stat-value {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 8px;
-            margin-top: 8px;
-        }
-        
-        .stat-item:nth-child(1) .stat-value {
-            color: #2563eb;
-        }
-        
-        .stat-item:nth-child(2) .stat-value {
-            color: #d97706;
-        }
-        
-        .stat-item:nth-child(3) .stat-value {
-            color: #dc2626;
-        }
-        
-        .stat-item:nth-child(4) .stat-value {
-            color: #059669;
-        }
-        
-        .stat-label {
-            font-size: 0.9rem;
-            color: #64748b;
-            font-weight: 600;
-        }
-        
-        /* Table Container */
-        .table-container {
-            background: #ffffff;
-            border-radius: 16px;
-            padding: 0;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-            overflow: hidden;
-            border: 1px solid #e8ecf1;
-            animation: fadeIn 0.6s ease-out;
-        }
-        
-        .table-wrapper {
-            overflow-x: auto;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.95em;
-        }
-        
-        th, td {
-            padding: 18px 16px;
-            text-align: left;
-            vertical-align: middle;
-        }
-        
-        thead {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-        }
-        
-        th {
-            color: #ffffff;
-            font-weight: 600;
-            font-size: 0.9em;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            white-space: nowrap;
-            border-bottom: 2px solid #1d4ed8;
-        }
-        
-        tbody tr {
-            transition: all 0.2s ease;
-            border-bottom: 1px solid #f1f5f9;
-        }
-        
-        tbody tr:hover {
-            background: #f8fafc;
-        }
-        
-        tbody tr:last-child {
-            border-bottom: none;
-        }
-        
-        tbody td {
-            color: #475569;
-        }
-        
-        tbody td:first-child {
-            font-weight: 700;
-            color: #1e293b;
-            font-size: 1.05em;
-        }
-        
-        .kuota-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 16px;
-            border-radius: 10px;
-            font-weight: 700;
-            font-size: 0.9em;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-        }
-        
-        .kuota-badge:hover {
-            transform: scale(1.05);
-        }
-        
-        .badge-total {
-            background: linear-gradient(135deg, #dbeafe, #93c5fd);
-            color: #1e40af;
-            border: 1px solid #60a5fa;
-        }
-        
-        .badge-used {
-            background: linear-gradient(135deg, #fee2e2, #fca5a5);
-            color: #991b1b;
-            border: 1px solid #f87171;
-        }
-        
-        .badge-available {
-            background: linear-gradient(135deg, #d1fae5, #6ee7b7);
-            color: #065f46;
-            border: 1px solid #34d399;
-        }
-        
-        .aksi {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
+@extends('admin.layouts.app')
 
-        .tanggal-digunakan {
-            font-size: 0.85em;
-            color: #1e293b;
-            line-height: 1.4;
-        }
+@section('title', 'Kelola Kuota PKL')
 
-        .tanggal-badge {
-            display: inline-block;
-            background: linear-gradient(135deg, #e0f2fe, #bae6fd);
-            color: #0c4a6e;
-            padding: 4px 8px;
-            border-radius: 6px;
-            margin: 2px 0;
-            font-weight: 600;
-            border: 1px solid #7dd3fc;
-        }
-
-        .no-tanggal {
-            color: #64748b;
-            font-style: italic;
-            font-size: 0.85em;
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 80px 20px;
-            color: #94a3b8;
-        }
-        
-        .empty-state-icon {
-            font-size: 4rem;
-            margin-bottom: 16px;
-            opacity: 0.6;
-        }
-        
-        .empty-state-text {
-            font-size: 1.1rem;
-            font-weight: 500;
-            color: #64748b;
-        }
-        
-        /* Scrollbar Styling */
-        .table-wrapper::-webkit-scrollbar {
-            height: 8px;
-        }
-        
-        .table-wrapper::-webkit-scrollbar-track {
-            background: #f1f5f9;
-            border-radius: 10px;
-        }
-        
-        .table-wrapper::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 10px;
-        }
-        
-        .table-wrapper::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
-        
-        /* Animations */
-        @keyframes slideInAlert {
-            from {
-                opacity: 0;
-                transform: translateX(-100px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-        
-        @keyframes bounceIn {
-            0% {
-                transform: scale(0);
-                opacity: 0;
-            }
-            50% {
-                transform: scale(1.2);
-            }
-            100% {
-                transform: scale(1);
-                opacity: 1;
-            }
-        }
-        
-        @keyframes progressBar {
-            from {
-                transform: scaleY(1);
-            }
-            to {
-                transform: scaleY(0);
-            }
-        }
-        
-        @keyframes fadeIn {
-            from { 
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to { 
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        /* Responsive */
-        @media (max-width: 768px) {
-            .container { padding: 0 16px; }
-            .navbar { padding: 16px 20px; }
-            .header-section { 
-                padding: 24px;
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            h1 { font-size: 1.6rem; }
-            .btn-group { width: 100%; }
-            .btn { width: 100%; justify-content: center; }
-            table { min-width: 800px; }
-            .stats-card { 
-                padding: 24px;
-                grid-template-columns: repeat(2, 1fr);
-                gap: 16px;
-            }
-            .stat-value { font-size: 2rem; }
-            .stat-item { padding: 16px; }
-        }
-        
-        @media (max-width: 480px) {
-            .logo { font-size: 1.2em; }
-            h1 { font-size: 1.4rem; }
-            th, td { padding: 14px 12px; font-size: 0.9em; }
-            .aksi { flex-direction: column; }
-            .btn-edit, .btn-delete { width: 100%; justify-content: center; }
-            .stats-card { 
-                grid-template-columns: 1fr;
-                padding: 20px;
-            }
-            .back-link { padding: 8px 16px; font-size: 0.9em; }
-        }
-    </style>
-</head>
-<body>
-    <div class="navbar">
-        <div class="navbar-content">
-            <span class="logo">Admin Dashboard</span>
-            <a href="{{ route('admin.dashboard') }}" class="back-link">Kembali</a>
+@section('navbar-branding')
+    <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 38px; height: 38px; background: white; border: 1px solid #e2e8f0; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #0f172a; box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+        </div>
+        <div style="display: flex; flex-direction: column;">
+            <span style="font-size: 1rem; font-weight: 700; color: #0f172a; letter-spacing: -0.02em;">Kuota Bulanan</span>
+            <span style="font-size: 0.75rem; color: #64748b; font-weight: 500;">Monitoring Slot & Jadwal Peserta</span>
         </div>
     </div>
-    
-    <div class="container">
-        <div class="header-section">
-            <h1> Kelola Kuota PKL</h1>
-            <div class="btn-group">
-                <a href="{{ route('admin.kuotas.create') }}" class="btn btn-add">
-                    Tambah Kuota
-                </a>
-            </div>
-        </div>
+@endsection
+
+@section('navbar-actions')
+    <div style="display: flex; gap: 10px;">
+        <a href="{{ route('admin.dashboard') }}" 
+           style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: white; color: #64748b; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 0.9rem; border: 1px solid #e2e8f0; transition: all 0.2s;"
+           onmouseover="this.style.background='#f8fafc'; this.style.color='#334155';"
+           onmouseout="this.style.background='white'; this.style.color='#64748b';">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            <span>Dashboard</span>
+        </a>
+        </a>
+        <a href="{{ route('admin.kuotas.create') }}" 
+           style="display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; background: #0f172a; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 0.85rem; box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.15); transition: all 0.2s;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Tambah Kuota
+        </a>
+    </div>
+@endsection
+
+@section('content')
+    <style>
+        /* Card & Table Styles */
+        .card-clean { background: white; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.02); overflow: hidden; animation: fadeInUp 0.5s ease-out; }
+        .table-clean { width: 100%; border-collapse: collapse; }
         
-        @if(session('success'))
-            <div class="alert-success" id="successAlert">{{ session('success') }}</div>
+        .table-clean th { 
+            background: #f8fafc; color: #64748b; font-size: 0.75rem; font-weight: 700; 
+            text-transform: uppercase; letter-spacing: 0.05em; padding: 16px 24px; 
+            border-bottom: 1px solid #e2e8f0; text-align: left; 
+        }
+        
+        .table-clean td { 
+            padding: 18px 24px; border-bottom: 1px solid #f1f5f9; 
+            vertical-align: middle; color: #334155; font-size: 0.9rem; 
+        }
+        
+        /* Progress Bar */
+        .progress-container { width: 100%; min-width: 100px; height: 6px; background: #f1f5f9; border-radius: 99px; overflow: hidden; margin-top: 8px; }
+        .progress-fill { height: 100%; border-radius: 99px; transition: width 0.6s ease; }
+        
+        /* Badges */
+        .badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; gap: 4px; }
+        .badge-full { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+        .badge-avail { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .badge-detail { background: #eff6ff; color: #1e40af; border: 1px solid #dbeafe; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .badge-detail:hover { background: #dbeafe; }
+
+        /* Buttons */
+        .action-btn { width: 34px; height: 34px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; border: none; cursor: pointer; transition: 0.2s; color: #64748b; background: transparent; }
+        .action-btn:hover { background: #f1f5f9; color: #0f172a; }
+        .action-btn.delete:hover { background: #fef2f2; color: #ef4444; }
+
+        /* Expandable Row (Detail Peserta) */
+        .detail-row { display: none; background: #f8fafc; animation: slideDown 0.3s ease; }
+        .detail-row.active { display: table-row; }
+        .detail-content { padding: 24px 32px !important; border-bottom: 1px solid #e2e8f0; border-top: 2px solid #e2e8f0; }
+        
+        /* --- STYLE BARU KHUSUS GRID SISWA (TEXT ONLY) --- */
+        .student-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
+            gap: 16px; 
+        }
+        
+        .student-card-simple { 
+            background: white; 
+            border: 1px solid #e2e8f0; 
+            border-radius: 10px; 
+            padding: 16px; 
+            display: flex; 
+            flex-direction: column;
+            gap: 12px;
+            transition: 0.2s;
+        }
+        .student-card-simple:hover { 
+            border-color: #cbd5e1; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); 
+        }
+
+        .info-group {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        
+        .info-label {
+            font-size: 0.7rem;
+            color: #64748b;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+        }
+
+        .info-value {
+            font-size: 0.95rem;
+            color: #1e293b;
+            font-weight: 600;
+        }
+
+        .info-value-secondary {
+            font-size: 0.9rem;
+            color: #334155;
+            font-weight: 500;
+        }
+
+        /* Modal */
+        .modal { display: none; position: fixed; z-index: 999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); }
+        .modal-box { background: white; margin: 10% auto; padding: 32px; width: 400px; border-radius: 16px; text-align: center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+        
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+
+    {{-- ALERT --}}
+    @if(session('success'))
+        <div id="alert-success" style="background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 14px 20px; border-radius: 12px; margin-bottom: 24px; display: flex; align-items: center; gap: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span style="font-weight: 500;">{{ session('success') }}</span>
+        </div>
+    @endif
+
+    {{-- TABLE --}}
+    <div class="card-clean">
+        <div style="overflow-x: auto;">
+            <table class="table-clean">
+                <thead>
+                    <tr>
+                        <th width="5%">No</th>
+                        <th width="20%">Bulan</th>
+                        <th width="25%">Kapasitas</th>
+                        <th width="15%">Status</th>
+                        <th width="20%">Peserta Approved</th>
+                        <th width="15%" style="text-align: center;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($kuotas as $index => $kuota)
+                        @php
+                            $approvedUsers = $kuota->pendaftarans->where('status', 'approved'); 
+                            $terisiTotal = $kuota->pendaftarans->count(); 
+                            $sisa = $kuota->jumlah_kuota - $terisiTotal;
+                            $persen = $kuota->jumlah_kuota > 0 ? ($terisiTotal / $kuota->jumlah_kuota) * 100 : 0;
+                            
+                            $color = '#3b82f6';
+                            if($persen > 80) $color = '#f59e0b';
+                            if($persen >= 100) $color = '#ef4444';
+                        @endphp
+                    <tr>
+                        <td style="text-align: center; color: #94a3b8;">{{ $index + 1 }}</td>
+                        
+                        {{-- Bulan --}}
+                        <td>
+                            <div style="font-weight: 600; color: #1e293b; font-size: 0.95rem;">{{ $kuota->bulan }}</div>
+                        </td>
+                        
+                        {{-- Kapasitas & Progress --}}
+                        <td>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px;">
+                                <span style="color: #64748b;">Terisi: <strong>{{ $terisiTotal }}</strong></span>
+                                <span style="color: #64748b;">Total: <strong>{{ $kuota->jumlah_kuota }}</strong></span>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-fill" style="width: {{ $persen }}%; background: {{ $color }};"></div>
+                            </div>
+                        </td>
+                        
+                        {{-- Status Badge --}}
+                        <td>
+                            @if($sisa <= 0)
+                                <span class="badge badge-full">Penuh</span>
+                            @else
+                                <span class="badge badge-avail">{{ $sisa }} Slot Tersedia</span>
+                            @endif
+                        </td>
+                        
+                        {{-- Tombol Lihat Detail Peserta --}}
+                        <td>
+                            @if($approvedUsers->count() > 0)
+                                <button type="button" class="badge badge-detail" onclick="toggleDetail('detail-{{ $kuota->id }}')">
+                                    Lihat {{ $approvedUsers->count() }} Peserta
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 4px;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                </button>
+                            @else
+                                <span style="font-size: 0.8rem; color: #94a3b8; font-style: italic;">Belum ada peserta</span>
+                            @endif
+                        </td>
+                        
+                        {{-- Aksi --}}
+                        <td style="text-align: center;">
+                            <a href="{{ route('admin.kuotas.edit', $kuota->id) }}" class="action-btn" title="Edit">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                            </a>
+                            <form action="{{ route('admin.kuotas.destroy', $kuota->id) }}" method="POST" style="display: inline;">
+                                @csrf
+                                @method('DELETE')
+                                <button type="button" class="action-btn delete" onclick="showDeleteModal(event, '{{ $kuota->bulan }}')" title="Hapus">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+
+                    {{-- DETAIL ROW (Data Siswa Simple) --}}
+                    <tr id="detail-{{ $kuota->id }}" class="detail-row">
+                        <td colspan="6" class="detail-content">
+                            <h4 style="font-size: 0.9rem; font-weight: 700; color: #64748b; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.05em;">
+                                Data Peserta PKL - {{ $kuota->bulan }}
+                            </h4>
+                            
+                            <div class="student-grid">
+                            @foreach($approvedUsers as $siswa)
+                                <div class="student-card-simple">
+                                    {{-- Nama --}}
+                                    <div class="info-group">
+                                        <span class="info-label">Nama:</span>
+                                        <span class="info-value">
+                                            {{ $siswa->user->name ?? $siswa->nama_lengkap ?? '-' }}
+                                        </span>
+                                    </div>
+
+                                    {{-- Asal Sekolah --}}
+                                    <div class="info-group">
+                                        <span class="info-label">Asal Univ/Sekolah:</span>
+                                        {{-- Cek di tabel user juga karena ProfileController menyimpan data di sana --}}
+                                        <span class="info-value-secondary">
+                                            {{ $siswa->user->asal_sekolah ?? $siswa->asal_sekolah ?? '-' }}
+                                        </span>
+                                    </div>
+
+                                    {{-- Jurusan --}}
+                                    <div class="info-group">
+                                        <span class="info-label">Jurusan:</span>
+                                        <span class="info-value-secondary">
+                                            {{ $siswa->user->jurusan ?? $siswa->jurusan ?? '-' }}
+                                        </span>
+                                    </div>
+
+                                    {{-- Periode PKL --}}
+                                    <div class="info-group">
+                                    <span class="info-label">Periode PKL:</span>
+                                    <span class="info-value-secondary" style="font-weight: 600; color: #0f172a;">
+                                        {{ \Carbon\Carbon::parse($siswa->tanggal_mulai_pkl)->translatedFormat('d M Y') }} 
+                                        <span style="color: #94a3b8; margin: 0 4px;">s/d</span> 
+                                        {{ \Carbon\Carbon::parse($siswa->tanggal_selesai_pkl)->translatedFormat('d M Y') }}
+                                    </span>
+                                </div>
+                                </div>
+                            @endforeach
+                        </div>
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+
+        @if($kuotas->isEmpty())
+            <div style="padding: 64px; text-align: center; color: #94a3b8;">
+                <p>Belum ada data kuota yang ditambahkan.</p>
+            </div>
         @endif
-        
-        <div class="stats-card">
-            <div class="stat-item">
-                <div class="stat-value">{{ count($kuotas) }}</div>
-                <div class="stat-label">Total Periode</div>
+    </div>
+
+    {{-- MODAL DELETE --}}
+    <div id="deleteModal" class="modal">
+        <div class="modal-box">
+            <div style="width: 48px; height: 48px; background: #fef2f2; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: #ef4444;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
             </div>
-            <div class="stat-item">
-                <div class="stat-value">{{ $kuotas->sum('jumlah_kuota') }}</div>
-                <div class="stat-label">Total Kuota</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value">{{ $kuotas->sum('jumlah_kuota') - $kuotas->sum('available_slots') }}</div>
-                <div class="stat-label">Total Digunakan</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value">{{ $kuotas->sum('available_slots') }}</div>
-                <div class="stat-label">Total Tersedia</div>
-            </div>
-        </div>
-        
-        <div class="table-container">
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>📅 Bulan</th>
-                            <th>🎯 Jumlah Kuota</th>
-                            <th>📊 Digunakan</th>
-                            <th>✅ Tersedia</th>
-                            <th>📅 Tanggal PKL</th>
-                            <th>⚡ Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($kuotas as $kuota)
-                            <tr>
-                                <td>{{ $kuota->bulan }}</td>
-                                <td>
-                                    <span class="kuota-badge badge-total">{{ $kuota->jumlah_kuota }}</span>
-                                </td>
-                                <td>
-                                    <span class="kuota-badge badge-used">{{ $kuota->jumlah_kuota - $kuota->available_slots }}</span>
-                                </td>
-                                <td>
-                                    <span class="kuota-badge badge-available">{{ $kuota->available_slots }}</span>
-                                </td>
-                                <td>
-                                    @if($kuota->pendaftarans->count() > 0)
-                                        <div class="tanggal-digunakan">
-                                            <strong>Tanggal yang sudah diambil:</strong><br>
-                                            @foreach($kuota->pendaftarans as $pendaftaran)
-                                                <span class="tanggal-badge">{{ \Carbon\Carbon::parse($pendaftaran->tanggal_mulai_pkl)->format('d/m/Y') }} - {{ \Carbon\Carbon::parse($pendaftaran->tanggal_selesai_pkl)->format('d/m/Y') }}</span><br>
-                                            @endforeach
-                                        </div>
-                                    @else
-                                        <span class="no-tanggal">Belum ada tanggal yang diambil</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    <div class="aksi">
-                                        <a href="{{ route('admin.kuotas.edit', $kuota->id) }}" class="btn btn-edit">
-                                            Edit
-                                        </a>
-                                        <form action="{{ route('admin.kuotas.destroy', $kuota->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Anda yakin ingin menghapus kuota ini?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-delete">
-                                                Hapus
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6">
-                                    <div class="empty-state">
-                                        <div class="empty-state-icon">📭</div>
-                                        <div class="empty-state-text">Belum ada kuota PKL yang ditambahkan</div>
-                                    </div>
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+            <h3 style="margin-bottom: 8px; font-weight: 700; color: #1e293b;">Hapus Kuota?</h3>
+            <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 24px;">
+                Anda yakin ingin menghapus kuota <strong id="deleteTarget"></strong>? <br>Data yang dihapus tidak dapat dikembalikan.
+            </p>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button onclick="closeModal()" style="padding: 10px 20px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; font-weight: 600; color: #64748b; cursor: pointer;">Batal</button>
+                <button id="confirmDeleteBtn" style="padding: 10px 20px; border-radius: 8px; border: none; background: #ef4444; font-weight: 600; color: white; cursor: pointer;">Hapus</button>
             </div>
         </div>
     </div>
 
     <script>
-        // Auto hide alert after 5 seconds
-        const alert = document.getElementById('successAlert');
-        if (alert) {
-            setTimeout(() => {
+        // Auto Hide Alert
+        setTimeout(() => {
+            const alert = document.getElementById('alert-success');
+            if(alert) {
                 alert.style.opacity = '0';
-                alert.style.transform = 'translateX(-100px)';
-                setTimeout(() => {
-                    alert.remove();
-                }, 500);
-            }, 5000);
+                alert.style.transition = 'opacity 0.5s';
+                setTimeout(() => alert.remove(), 500);
+            }
+        }, 3000);
+
+        // Toggle Accordion Detail
+        function toggleDetail(rowId) {
+            const row = document.getElementById(rowId);
+            if (row.style.display === "table-row") {
+                row.style.display = "none";
+            } else {
+                row.style.display = "table-row";
+            }
+        }
+
+        // Modal Logic
+        function showDeleteModal(event, bulan) {
+            event.preventDefault();
+            document.getElementById('deleteTarget').innerText = bulan;
+            document.getElementById('deleteModal').style.display = 'block';
+            
+            const form = event.target.closest('form');
+            document.getElementById('confirmDeleteBtn').onclick = function() {
+                form.submit();
+            };
+        }
+
+        function closeModal() {
+            document.getElementById('deleteModal').style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) closeModal();
         }
     </script>
-</body>
-</html> 
+@endsection

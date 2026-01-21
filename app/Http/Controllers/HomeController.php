@@ -7,52 +7,75 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Pendaftaran;
 use App\Models\Kuota;
 use App\Models\AlumniPkl;
+use App\Models\AlertMessage;
 
 class HomeController extends Controller
 {
     public function index()
     {
-        $suratMitraNotification = false;
-        $hasPendaftaran = false;
+        // --- 1. DATA UMUM ---
         $kuotas = Kuota::all();
         $alumni = AlumniPkl::where('is_active', true)->get();
 
-        // Sort kuotas in chronological order (January to December)
+        // AMBIL ALERT MESSAGE DARI DATABASE (ADMIN)
+        // Kita ambil pesannya dan simpan ke variabel $pesan_admin
+        $alertData = AlertMessage::where('key', 'pkl_warning')->first();
+        $pesan_admin = ($alertData && $alertData->is_active) ? $alertData->message : null;
+        // Sorting Kuota
         $monthOrder = [
             'Januari' => 1, 'Februari' => 2, 'Maret' => 3, 'April' => 4, 'Mei' => 5, 'Juni' => 6,
             'Juli' => 7, 'Agustus' => 8, 'September' => 9, 'Oktober' => 10, 'November' => 11, 'Desember' => 12
         ];
 
         $kuotas = $kuotas->sort(function ($a, $b) use ($monthOrder) {
-            // Parse bulan and tahun from "Bulan Tahun" format
             $aParts = explode(' ', $a->bulan);
             $bParts = explode(' ', $b->bulan);
-
             $aMonth = $monthOrder[$aParts[0]] ?? 0;
             $bMonth = $monthOrder[$bParts[0]] ?? 0;
             $aYear = (int)($aParts[1] ?? 0);
             $bYear = (int)($bParts[1] ?? 0);
-
-            // Sort by year first, then by month
-            if ($aYear !== $bYear) {
-                return $aYear <=> $bYear;
-            }
-            return $aMonth <=> $bMonth;
+            return $aYear === $bYear ? $aMonth <=> $bMonth : $aYear <=> $bYear;
         })->values();
 
-        $pendaftaranStatus = null;
+        // --- 2. LOGIKA ALUR ---
+        $stepStatus = [1 => 'active', 2 => 'pending', 3 => 'pending'];
+        $pendaftaran = null;
+        $profileComplete = false;
+        $suratMitraNotification = false;
+
         if (Auth::check()) {
-            $pendaftaran = Pendaftaran::where('email', Auth::user()->email)->first();
+            $user = Auth::user();
+            $profileComplete = !empty($user->asal_sekolah) && !empty($user->jurusan) && !empty($user->no_telp);
+            $stepStatus[1] = 'completed';
+            $stepStatus[2] = 'active';
+
+            $pendaftaran = Pendaftaran::where('user_id', $user->id)
+                            ->orWhere('email', $user->email)
+                            ->first();
+
             if ($pendaftaran) {
-                $hasPendaftaran = true;
-                $pendaftaranStatus = $pendaftaran->status;
+                $stepStatus[2] = 'completed';
+                $stepStatus[3] = 'active';
+
+                if ($pendaftaran->status == 'approved' || $pendaftaran->status == 'diterima' || $pendaftaran->status == 'ditolak') {
+                    $stepStatus[3] = 'completed';
+                }
+                
                 if ($pendaftaran->surat_mitra_signed && !session('surat_mitra_visited_' . $pendaftaran->id)) {
                     $suratMitraNotification = true;
                 }
             }
         }
 
-        return view('home', compact('suratMitraNotification', 'hasPendaftaran', 'pendaftaranStatus', 'kuotas', 'alumni'));
+        return view('home', compact(
+            'kuotas', 
+            'alumni', 
+            'pesan_admin', // <-- INI YANG PENTING
+            'pendaftaran',      
+            'stepStatus',       
+            'profileComplete',  
+            'suratMitraNotification' 
+        ));
     }
 
     public function timBps()
@@ -61,7 +84,7 @@ class HomeController extends Controller
         $suratMitraNotification = false;
 
         if (Auth::check()) {
-            $pendaftaran = Pendaftaran::where('email', Auth::user()->email)->first();
+            $pendaftaran = Pendaftaran::where('user_id', Auth::user()->id)->first();
             if ($pendaftaran) {
                 $pendaftaranStatus = $pendaftaran->status;
                 if ($pendaftaran->surat_mitra_signed && !session('surat_mitra_visited_' . $pendaftaran->id)) {

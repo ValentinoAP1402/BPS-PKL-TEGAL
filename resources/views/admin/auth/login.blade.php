@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login</title>
+    <title>Admin Portal - Masuk & Daftar</title>
     <link rel="shortcut icon" href="{{ asset('image/bps.png') }}" type="image/x-icon">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -17,576 +17,414 @@
             justify-content: center;
             padding: 20px;
             position: relative;
-            overflow: auto;
+            overflow-y: auto; /* Allow scroll on small screens */
         }
 
-        /* Animated Background Shapes */
+        /* Background Shapes Animation */
         .bg-shape {
             position: fixed;
             border-radius: 50%;
-            filter: blur(100px);
+            filter: blur(80px);
             opacity: 0.4;
             animation: float-shapes 20s ease-in-out infinite;
             z-index: 0;
         }
-
         @keyframes float-shapes {
             0%, 100% { transform: translate(0, 0) scale(1); }
-            33% { transform: translate(80px, -80px) scale(1.1); }
-            66% { transform: translate(-80px, 80px) scale(0.9); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
         }
 
-        .shape-1 {
-            width: 400px;
-            height: 400px;
-            background: #667eea;
-            top: -100px;
-            left: -100px;
-        }
-
-        .shape-2 {
-            width: 350px;
-            height: 350px;
-            background: #764ba2;
-            bottom: -100px;
-            right: -100px;
-            animation-delay: 7s;
-        }
-
-        /* Login Container */
-        .login-container {
-            background: rgba(255, 255, 255, 0.98);
-            backdrop-filter: blur(20px);
-            border-radius: 30px;
-            padding: 50px 45px;
-            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
+        /* Container Card */
+        .auth-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
             width: 100%;
-            max-width: 450px;
+            max-width: 420px;
+            padding: 0; /* Padding handled inside */
             position: relative;
-            z-index: 10;
-            animation: slideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            z-index: 1;
+            overflow: hidden;
+            transition: height 0.3s ease;
         }
 
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(50px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        /* Toggle Tabs (Header) */
+        .toggle-container {
+            display: flex;
+            background: #f1f5f9;
+            padding: 6px;
+            margin: 20px 20px 10px;
+            border-radius: 12px;
+            position: relative;
         }
 
-
-        @keyframes fadeIn {
-            to { opacity: 1; }
-        }
-
-
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-10px); }
-            75% { transform: translateX(10px); }
-        }
-
-        /* Header */
-        h1 {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-align: center;
-            margin-bottom: 10px;
-            font-size: 2rem;
-            font-weight: 800;
-            animation: fadeIn 0.8s ease 0.5s forwards;
-            opacity: 0;
-        }
-
-        .subtitle {
-            text-align: center;
-            color: #718096;
-            margin-bottom: 35px;
-            font-size: 0.95rem;
-            line-height: 1.5;
-            animation: fadeIn 0.8s ease 0.6s forwards;
-            opacity: 0;
-        }
-
-        /* Form Styles */
-        form {
-            animation: fadeIn 0.8s ease 0.7s forwards;
-            opacity: 0;
-        }
-
-        .form-group {
-            margin-bottom: 24px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 10px;
-            color: #2d3748;
+        .toggle-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            color: #64748b;
             font-weight: 600;
             font-size: 0.95rem;
+            cursor: pointer;
+            border-radius: 8px;
+            z-index: 2;
+            transition: color 0.3s;
         }
 
-        .input-wrapper {
-            position: relative;
+        .toggle-btn.active {
+            color: #4f46e5;
         }
 
-        input[type="text"],
-        input[type="password"] {
-            width: 100%;
-            padding: 14px 18px;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
+        /* Moving Slider for Tabs */
+        .slider {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            height: calc(100% - 12px);
+            width: calc(50% - 6px);
             background: white;
-            font-family: inherit;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            z-index: 1;
         }
 
-        input[type="text"]:focus,
-        input[type="password"]:focus {
+        /* Logo Area */
+        .header-logo {
+            text-align: center;
+            padding-top: 20px;
+        }
+        .header-logo img {
+            width: 60px;
+            height: auto;
+            margin-bottom: 10px;
+        }
+        .header-logo h2 {
+            color: #1e293b;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        .header-logo p {
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        /* Forms Wrapper */
+        .forms-wrapper {
+            position: relative;
+            overflow: hidden;
+            padding: 20px 30px 30px;
+        }
+
+        /* Form Styling */
+        .auth-form {
+            display: none; /* Hidden by default */
+            animation: fadeIn 0.4s ease;
+        }
+        .auth-form.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+        .input-label {
+            display: block;
+            margin-bottom: 6px;
+            color: #475569;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .input-field {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            transition: all 0.2s;
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
-            transform: translateY(-2px);
+            background: #f8fafc;
         }
-
-        input.error {
+        .input-field:focus {
+            border-color: #6366f1;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+        .input-field.error {
             border-color: #ef4444;
             background: #fef2f2;
         }
 
-        input.error:focus {
-            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.12);
+        .error-msg {
+            color: #ef4444;
+            font-size: 0.8rem;
+            margin-top: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
-        /* Toggle Password Button */
-        .toggle-password {
-            position: absolute;
-            right: 16px;
-            top: 50%;
-            transform: translateY(-50%);
+        /* Button */
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
             cursor: pointer;
-            font-size: 1.3rem;
-            transition: all 0.3s ease;
-            user-select: none;
+            transition: transform 0.1s, box-shadow 0.2s;
+            margin-top: 10px;
+        }
+        .btn-submit:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+        .btn-submit:active {
+            transform: translateY(1px);
         }
 
-        .toggle-password:hover {
-            transform: translateY(-50%) scale(1.1);
+        /* Alert Box */
+        .alert {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        .alert-success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
         }
 
-        /* Error text inline */
-        .error-text {
-            color: #dc2626;
+        /* Checkbox & Links */
+        .actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
             font-size: 0.85rem;
-            margin-top: 6px;
+        }
+        .remember-me {
             display: flex;
             align-items: center;
             gap: 6px;
-            font-weight: 500;
-            opacity: 0;
-            transform: translateY(-5px);
-            animation: slideInError 0.3s ease forwards;
-        }
-
-        @keyframes slideInError {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Messages */
-        .error-message,
-        .success-message {
-            padding: 14px 18px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            font-size: 0.9rem;
-            animation: slideInMessage 0.4s ease;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        @keyframes slideInMessage {
-            from {
-                opacity: 0;
-                transform: translateX(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        .error-message {
-            background: linear-gradient(135deg, #fed7d7 0%, #feb2b2 100%);
-            color: #c53030;
-            border: 2px solid #fc8181;
-        }
-
-        .error-message::before {
-            content: '⚠️';
-            font-size: 1.2rem;
-        }
-
-        .success-message {
-            background: linear-gradient(135deg, #c6f6d5 0%, #9ae6b4 100%);
-            color: #276749;
-            border: 2px solid #68d391;
-        }
-
-        .success-message::before {
-            content: '✓';
-            font-size: 1.2rem;
-        }
-
-        /* Submit Button */
-        .btn {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 1.05rem;
-            font-weight: 700;
+            color: #64748b;
             cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 8px;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        .checkbox {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            cursor: pointer;
         }
 
-        .btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-            transition: left 0.3s ease;
-            z-index: -1;
-        }
-
-        .btn:hover::before {
-            left: 0;
-        }
-
-        .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.6);
-        }
-
-        .btn:active {
-            transform: translateY(-1px);
-        }
-
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        /* Links */
-        .links {
-            text-align: center;
-            margin-top: 28px;
-            animation: fadeIn 0.8s ease 0.9s forwards;
-            opacity: 0;
-        }
-
-        .links a {
-            color: #667eea;
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            display: inline-block;
-        }
-
-        .links a:hover {
-            color: #5a67d8;
-            transform: translateY(-2px);
-        }
-
-        /* Heart Decorations */
-        .heart {
-            position: absolute;
-            font-size: 1.2rem;
-            opacity: 0.2;
-            animation: heartFloat 3s ease-in-out infinite;
-        }
-
-        @keyframes heartFloat {
-            0%, 100% { transform: translateY(0) scale(1); }
-            50% { transform: translateY(-15px) scale(1.1); }
-        }
-
-        .heart-1 { top: 30px; left: 35px; animation-delay: 0s; }
-        .heart-2 { top: 70px; right: 40px; animation-delay: 1s; }
-        .heart-3 { bottom: 90px; left: 45px; animation-delay: 2s; }
-        .heart-4 { bottom: 50px; right: 35px; animation-delay: 1.5s; }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .login-container {
-                padding: 40px 35px;
-                max-width: 420px;
-            }
-
-            h1 {
-                font-size: 1.85rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            body {
-                padding: 15px;
-            }
-
-            .login-container {
-                padding: 35px 28px;
-                border-radius: 25px;
-            }
-
-            h1 {
-                font-size: 1.7rem;
-            }
-
-            .subtitle {
-                font-size: 0.9rem;
-            }
-
-            input[type="text"],
-            input[type="password"] {
-                padding: 12px 16px;
-                font-size: 0.95rem;
-            }
-
-            .btn {
-                padding: 14px;
-                font-size: 1rem;
-            }
-
-            .heart {
-                display: none;
-            }
-        }
-
-        @media (max-width: 375px) {
-            .login-container {
-                padding: 30px 24px;
-            }
-        }
-
-        /* Responsive for larger screens like 1300px width */
-        @media (min-width: 1300px) {
-            .login-container {
-                max-width: 500px;
-                padding: 60px 50px;
-            }
-
-            h1 {
-                font-size: 2.2rem;
-                margin-bottom: 15px;
-            }
-
-            .subtitle {
-                font-size: 1rem;
-                margin-bottom: 40px;
-            }
-
-            input[type="text"],
-            input[type="password"] {
-                padding: 16px 20px;
-                font-size: 1.05rem;
-            }
-
-            .btn {
-                padding: 18px;
-                font-size: 1.1rem;
-            }
-
-            .bg-shape.shape-1 {
-                width: 500px;
-                height: 500px;
-            }
-
-            .bg-shape.shape-2 {
-                width: 450px;
-                height: 450px;
-            }
-        }
     </style>
 </head>
 <body>
-    <!-- Background Shapes -->
-    <div class="bg-shape shape-1"></div>
-    <div class="bg-shape shape-2"></div>
 
-    <div class="login-container">
-        <!-- Login Content -->
-        <h1>Admin Login</h1>
-        <p class="subtitle">Masuk ke dashboard admin untuk mengelola sistem PKL</p>
+    <div class="bg-shape" style="top: -100px; left: -100px; width: 500px; height: 500px; background: #6366f1;"></div>
+    <div class="bg-shape" style="bottom: -100px; right: -100px; width: 400px; height: 400px; background: #ec4899; animation-delay: -5s;"></div>
 
-        @if(session('success'))
-            <div class="success-message">
-                {{ session('success') }}
-            </div>
-        @endif
+    <div class="auth-container">
+        
+        <div class="header-logo">
+            <img src="{{ asset('image/bps.png') }}" alt="Logo BPS">
+            <h2 id="headerTitle">Admin Login</h2>
+            <p id="headerDesc">Masuk untuk mengelola data PKL</p>
+        </div>
 
-        @if($errors->any())
-            <div class="error-message">
-                @foreach($errors->all() as $error)
-                    {{ $error }}<br>
-                @endforeach
-            </div>
-        @endif
+        <div class="toggle-container">
+            <div class="slider" id="slider"></div>
+            <button type="button" class="toggle-btn active" id="tab-login" onclick="switchTab('login')">Masuk</button>
+            <button type="button" class="toggle-btn" id="tab-register" onclick="switchTab('register')">Daftar</button>
+        </div>
 
-        <form method="POST" action="{{ route('admin.login') }}" id="login-form">
-            @csrf
-
-            <div class="form-group">
-                <label for="username">👤 Username</label>
-                <input
-                    type="text"
-                    id="username"
-                    name="username"
-                    value="{{ old('username') }}"
-                    placeholder="Masukkan username"
-                    required
-                >
-            </div>
-
-            <div class="form-group">
-                <label for="password">🔒 Password</label>
-                <div class="input-wrapper">
-                    <input
-                        type="password"
-                        id="password"
-                        name="password"
-                        placeholder="Masukkan password"
-                        required
-                    >
-                    <span class="toggle-password" id="toggle-password">👁️</span>
+        <div class="forms-wrapper">
+            
+            {{-- ALERT MESSAGES (General) --}}
+            @if(session('success'))
+                <div class="alert alert-success">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    {{ session('success') }}
                 </div>
-                <div id="password-error" class="error-text" style="display: none;">
-                    ⚠️ Password minimal harus 8 karakter!
+            @endif
+            @if(session('error'))
+                <div class="alert alert-error">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                    {{ session('error') }}
                 </div>
-            </div>
+            @endif
 
-            <button type="submit" class="btn"> Masuk ke Dashboard</button>
-        </form>
+            <form id="form-login" action="{{ route('admin.login.post') }}" method="POST" class="auth-form active">
+                @csrf
+                <div class="input-group">
+                    <label class="input-label">Username</label>
+                    <input type="text" name="username" class="input-field @error('username') error @enderror" placeholder="Admin BPS" required value="{{ old('username') }}">
+                    @error('username')
+                        <div class="error-msg">{{ $message }}</div>
+                    @enderror
+                </div>
 
-        <div class="links">
-            <a href="{{ route('admin.register') }}"> Belum punya akun? Daftar di sini</a>
+                <div class="input-group">
+                    <label class="input-label">Password</label>
+                    <div style="position: relative;">
+                        <input type="password" id="login-pass" name="password" class="input-field @error('password') error @enderror" placeholder="••••••••" required>
+                        <i class="fa-solid fa-eye toggle-password" onclick="togglePass('login-pass', this)" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #64748b;"></i>
+                    </div>
+                    @error('password')
+                        <div class="error-msg">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div class="actions">
+                    <label class="remember-me">
+                        <input type="checkbox" name="remember" class="checkbox"> Ingat Saya
+                    </label>
+                </div>
+
+                <button type="submit" class="btn-submit">Masuk Sekarang</button>
+            </form>
+
+            <form id="form-register" action="{{ route('admin.register.post') }}" method="POST" class="auth-form">
+                @csrf
+
+                {{-- Nama --}}
+                <div class="input-group">
+                    <label class="input-label">Nama Lengkap</label>
+                    <input type="text" name="name" class="input-field @error('name') error @enderror" placeholder="John Doe" value="{{ old('name') }}" required>
+                    @error('name')
+                        <div class="error-msg">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                {{-- Username --}}
+                <div class="input-group">
+                    <label class="input-label">Username</label>
+                    <input type="text" name="username" class="input-field @error('username') error @enderror" placeholder="adminbps" value="{{ old('username') }}" required>
+                    @error('username')
+                        <div class="error-msg">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                {{-- Email --}}
+                <div class="input-group">
+                    <label class="input-label">Email Address</label>
+                    <input type="email" name="email" class="input-field @error('email') error @enderror" placeholder="nama@email.com" value="{{ old('email') }}" required>
+                    @error('email')
+                        <div class="error-msg">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                {{-- Password --}}
+                <div class="input-group">
+                    <label class="input-label">Password</label>
+                    <div style="position: relative;">
+                        <input type="password" id="register-pass" name="password" class="input-field @error('password') error @enderror" placeholder="Minimal 8 karakter" required>
+                        <i class="fa-solid fa-eye toggle-password" onclick="togglePass('register-pass', this)" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #64748b;"></i>
+                    </div>
+                    @error('password')
+                        <div class="error-msg">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                {{-- Konfirmasi Password --}}
+                <div class="input-group">
+                    <label class="input-label">Konfirmasi Password</label>
+                    <div style="position: relative;">
+                        <input type="password" id="register-confirm-pass" name="password_confirmation" class="input-field @error('password_confirmation') error @enderror" placeholder="Ulangi password" required>
+                        <i class="fa-solid fa-eye toggle-password" onclick="togglePass('register-confirm-pass', this)" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #64748b;"></i>
+                    </div>
+                    @error('password_confirmation')
+                        <div class="error-msg">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <button type="submit" class="btn-submit">Daftar Akun Baru</button>
+            </form>
+
         </div>
     </div>
 
     <script>
-        // Password visibility toggle
-        const togglePassword = document.getElementById('toggle-password');
-        const passwordInput = document.getElementById('password');
-        const leftEye = document.getElementById('left-eye');
-        const rightEye = document.getElementById('right-eye');
+        function switchTab(tab) {
+            const slider = document.getElementById('slider');
+            const btnLogin = document.getElementById('tab-login');
+            const btnRegister = document.getElementById('tab-register');
+            const formLogin = document.getElementById('form-login');
+            const formRegister = document.getElementById('form-register');
 
-        // Toggle password visibility
-        togglePassword.addEventListener('click', function() {
-            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-            passwordInput.setAttribute('type', type);
-            this.textContent = type === 'password' ? '👁️' : '🙈';
-        });
+            const title = document.getElementById('headerTitle');
+            const desc = document.getElementById('headerDesc');
 
+            if(tab === 'login') {
+                // UI Logic
+                slider.style.transform = 'translateX(0)';
+                btnLogin.classList.add('active');
+                btnRegister.classList.remove('active');
 
-        passwordInput.addEventListener('blur', function() {
-            if (this.value.length === 0) {
-                leftEye.classList.remove('closed');
-                rightEye.classList.remove('closed');
-            }
-        });
+                // Form Logic
+                formLogin.classList.add('active');
+                formRegister.classList.remove('active');
 
-        passwordInput.addEventListener('input', function() {
-            const errorDiv = document.getElementById('password-error');
-            
-            if (this.value.length > 0) {
-                leftEye.classList.add('closed');
-                rightEye.classList.add('closed');
+                // Text
+                title.innerText = 'Admin Login';
+                desc.innerText = 'Masuk untuk mengelola data PKL';
             } else {
-                leftEye.classList.remove('closed');
-                rightEye.classList.remove('closed');
-            }
+                // UI Logic
+                slider.style.transform = 'translateX(100%)'; // Move to right
+                btnRegister.classList.add('active');
+                btnLogin.classList.remove('active');
 
-            // Show/hide error inline
-            if (this.value.length > 0 && this.value.length < 8) {
-                errorDiv.style.display = 'flex';
-                this.classList.add('error');
+                // Form Logic
+                formRegister.classList.add('active');
+                formLogin.classList.remove('active');
+
+                // Text
+                title.innerText = 'Daftar Admin';
+                desc.innerText = 'Buat akun baru untuk akses sistem';
+            }
+        }
+
+        function togglePass(inputId, icon) {
+            const input = document.getElementById(inputId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
             } else {
-                errorDiv.style.display = 'none';
-                this.classList.remove('error');
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
             }
+        }
+
+        // Auto-switch tab based on Errors (Laravel Validation)
+        document.addEventListener("DOMContentLoaded", function() {
+            // Jika ada error validasi di field register (seperti nama, admin_code, confirm password),
+            // otomatis pindah ke tab Register supaya user tau salahnya dimana.
+            @if($errors->has('name') || $errors->has('admin_code') || $errors->has('password_confirmation') || ($errors->has('email') && old('name')))
+                switchTab('register');
+            @endif
         });
-
-
-        // Form validation for password length
-        const loginForm = document.getElementById('login-form');
-        loginForm.addEventListener('submit', function(e) {
-            const passwordValue = passwordInput.value;
-            const errorDiv = document.getElementById('password-error');
-            
-            if (passwordValue.length < 8) {
-                e.preventDefault();
-                
-                // Show error
-                errorDiv.style.display = 'flex';
-                passwordInput.classList.add('error');
-                passwordInput.focus();
-            }
-        });
-
-        // Add ripple effect on button click
-        const button = document.querySelector('.btn');
-        button.addEventListener('click', function(e) {
-            const ripple = document.createElement('div');
-            ripple.style.position = 'absolute';
-            ripple.style.borderRadius = '50%';
-            ripple.style.background = 'rgba(255, 255, 255, 0.6)';
-            ripple.style.width = ripple.style.height = '100px';
-            ripple.style.left = e.clientX - this.offsetLeft - 50 + 'px';
-            ripple.style.top = e.clientY - this.offsetTop - 50 + 'px';
-            ripple.style.animation = 'ripple 0.6s ease-out';
-            ripple.style.pointerEvents = 'none';
-
-            this.appendChild(ripple);
-
-            setTimeout(() => ripple.remove(), 600);
-        });
-
-        // Add CSS for ripple animation
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes ripple {
-                from {
-                    transform: scale(0);
-                    opacity: 1;
-                }
-                to {
-                    transform: scale(2);
-                    opacity: 0;
-                }
-            }
-        `;
-        document.head.appendChild(style);
     </script>
 </body>
 </html>

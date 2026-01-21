@@ -64,4 +64,9 @@ class Admin extends Authenticatable
     {
         return $this->status === 'pending';
     }
+
+    public function getAuthIdentifierName()
+    {
+        return 'username';
+    }
 }

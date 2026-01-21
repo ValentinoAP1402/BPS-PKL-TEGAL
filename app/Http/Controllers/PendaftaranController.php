@@ -58,31 +58,49 @@ class PendaftaranController extends Controller
     public function create()
     {
         if (!Auth::check()) {
-            return redirect()->route('auth.google')->with('error', 'Anda harus login terlebih dahulu untuk mendaftar PKL.');
+            return redirect()->route('login')->with('error', 'Anda harus login terlebih dahulu untuk mendaftar PKL.');
         }
-        return view('pendaftaran.form'); // Form Pendaftaran
+
+        $user = Auth::user();
+        $profileComplete = !empty($user->asal_sekolah) && !empty($user->jurusan) && !empty($user->no_telp);
+
+        if (!$profileComplete) {
+            return redirect()->route('profile')->with('error', 'Lengkapi profil Anda terlebih dahulu sebelum mendaftar PKL.');
+        }
+
+        return view('pendaftaran.form', compact('profileComplete')); // Form Pendaftaran
     }
 
     public function store(Request $request)
     {
         if (!Auth::check()) {
-            return redirect()->route('auth.google')->with('error', 'Anda harus login terlebih dahulu untuk mendaftar PKL.');
+            return redirect()->route('auth.login')->with('error', 'Anda harus login terlebih dahulu untuk mendaftar PKL.');
         }
+
+        $user = Auth::user();
+        $profileComplete = !empty($user->asal_sekolah) && !empty($user->jurusan) && !empty($user->no_telp);
 
         // Log request data untuk debug
         Log::info('Pendaftaran store request', $request->all());
 
         try {
-            $request->validate([
-                'nama_lengkap' => 'required|string|max:255',
-                'asal_sekolah' => 'required|string|max:255',
-                'jurusan' => 'required|string|max:255',
-                'email' => 'required|email|unique:pendaftarans,email',
-                'no_hp' => 'required|string|max:20',
+            $validationRules = [
                 'surat_keterangan_pkl' => 'required|file|mimes:pdf|max:2048',
                 'tanggal_mulai_pkl' => 'required|date',
                 'tanggal_selesai_pkl' => 'required|date|after_or_equal:tanggal_mulai_pkl',
-            ]);
+            ];
+
+            if (!$profileComplete) {
+                $validationRules = array_merge($validationRules, [
+                    'nama_lengkap' => 'required|string|max:255',
+                    'asal_sekolah' => 'required|string|max:255',
+                    'jurusan' => 'required|string|max:255',
+                    'email' => 'required|email|unique:pendaftarans,email',
+                    'no_hp' => 'required|string|max:20',
+                ]);
+            }
+
+            $request->validate($validationRules);
 
             Log::info('Validation passed');
 
@@ -106,35 +124,50 @@ class PendaftaranController extends Controller
 
             Log::info('File stored at: ' . $path);
 
-            $pendaftaran = Pendaftaran::create([
-                'nama_lengkap' => $request->nama_lengkap,
-                'asal_sekolah' => $request->asal_sekolah,
-                'jurusan' => $request->jurusan,
-                'email' => $request->email,
-                'no_hp' => $request->no_hp,
+            $pendaftaranData = [
                 'surat_keterangan_pkl' => $path,
                 'tanggal_mulai_pkl' => $request->tanggal_mulai_pkl,
                 'tanggal_selesai_pkl' => $request->tanggal_selesai_pkl,
                 'status' => 'pending', // Pastikan default status pending
                 'kuota_id' => $kuota->id, // Set kuota_id
-            ]);
+            ];
+
+            if ($profileComplete) {
+                $pendaftaranData = array_merge($pendaftaranData, [
+                    'nama_lengkap' => $user->name,
+                    'asal_sekolah' => $user->asal_sekolah,
+                    'jurusan' => $user->jurusan,
+                    'email' => $user->email,
+                    'no_hp' => $user->no_telp,
+                ]);
+            } else {
+                $pendaftaranData = array_merge($pendaftaranData, [
+                    'nama_lengkap' => $request->nama_lengkap,
+                    'asal_sekolah' => $request->asal_sekolah,
+                    'jurusan' => $request->jurusan,
+                    'email' => $request->email,
+                    'no_hp' => $request->no_hp,
+                ]);
+            }
+
+            $pendaftaran = Pendaftaran::create($pendaftaranData);
 
             Log::info('Pendaftaran created with ID: ' . $pendaftaran->id);
 
-            return redirect()->route('pendaftaran.pendaftaran_berhasil');
+            return redirect()->route('home')->with('success_registration', true);
         } catch (\Illuminate\Validation\ValidationException $e) {
             Log::error('Validation failed', $e->errors());
             throw $e; // Laravel akan handle redirect dengan errors
         } catch (\Exception $e) {
             Log::error('Error in pendaftaran store: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Terjadi kesalahan saat menyimpan pendaftaran. Silakan coba lagi.');
+            return redirect()->back()->with('error', 'Terjadi kesalahan saat menyimpan pendaftaran: ' . $e->getMessage());
         }
     }
 
     public function suratMitraSigned()
     {
         if (!Auth::check()) {
-            return redirect()->route('auth.google')->with('error', 'Anda harus login terlebih dahulu.');
+            return redirect()->route('auth.login')->with('error', 'Anda harus login terlebih dahulu.');
         }
 
         $pendaftaran = Pendaftaran::where('email', Auth::user()->email)->first();
@@ -213,31 +246,55 @@ class PendaftaranController extends Controller
 
     public function checkQuota(Request $request)
     {
+       try {
         $date = $request->query('date');
 
         if (!$date) {
-            return response()->json(['error' => 'Date parameter is required'], 400);
+            return response()->json(['error' => 'Tanggal wajib diisi'], 400);
         }
 
+        // 1. Setting Locale ke Indonesia secara Paksa
+        Carbon::setLocale('id'); 
         $tanggalMulai = Carbon::parse($date);
-        $bulanTahun = $tanggalMulai->translatedFormat('F Y');
+        
+        // 2. Ubah format jadi "NamaBulan Tahun" (Contoh: Januari 2025)
+        $bulanTahun = $tanggalMulai->translatedFormat('F Y'); 
 
-        $kuota = Kuota::where('bulan', $bulanTahun)->first();
+        // 3. Cari di Database (Case Insensitive agar lebih aman)
+        // Kita cari yang bulannya mirip, misal 'januari 2025' atau 'Januari 2025'
+        $kuota = Kuota::where('bulan', 'LIKE', $bulanTahun)->first();
+
+        // Debugging (Opsional: Cek di Laravel Log jika masih error)
+        // \Log::info("Mencari kuota untuk: " . $bulanTahun);
 
         if (!$kuota) {
             return response()->json([
                 'available' => false,
-                'message' => 'Kuota belum tersedia untuk periode ini'
+                'message' => 'Kuota untuk bulan ' . $bulanTahun . ' belum dibuka oleh Admin.'
             ]);
         }
 
-        $available = $kuota->isAvailable();
+        // 4. Hitung sisa kuota
+        // Menggunakan method isAvailable() jika ada di Model, atau hitung manual
+        // Asumsi: Anda punya relasi pendaftarans() di model Kuota
+        $terisi = $kuota->pendaftarans()->whereIn('status', ['pending', 'diterima'])->count();
+        $sisa = $kuota->jumlah_kuota - $terisi;
 
-        return response()->json([
-            'available' => $available,
-            'available_slots' => $kuota->available_slots,
-            'total_quota' => $kuota->jumlah_kuota,
-            'bulan' => $bulanTahun
-        ]);
+        if ($sisa > 0) {
+            return response()->json([
+                'available' => true,
+                'message' => "Tersedia " . $sisa . " slot untuk " . $bulanTahun,
+                'sisa_kuota' => $sisa
+            ]);
+        } else {
+            return response()->json([
+                'available' => false,
+                'message' => "Mohon maaf, kuota untuk " . $bulanTahun . " sudah penuh."
+            ]);
+        }
+
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
     }
+}
 }
