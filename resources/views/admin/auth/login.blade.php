@@ -1,10 +1,12 @@
+{{-- resources/views/admin/auth/login.blade.php --}}
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login</title>
+    <title>Admin Portal - Masuk</title>
     <link rel="shortcut icon" href="{{ asset('image/bps.png') }}" type="image/x-icon">
+
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -17,576 +19,334 @@
             justify-content: center;
             padding: 20px;
             position: relative;
-            overflow: auto;
+            overflow-y: auto;
         }
 
-        /* Animated Background Shapes */
         .bg-shape {
             position: fixed;
             border-radius: 50%;
-            filter: blur(100px);
+            filter: blur(80px);
             opacity: 0.4;
             animation: float-shapes 20s ease-in-out infinite;
             z-index: 0;
         }
-
         @keyframes float-shapes {
             0%, 100% { transform: translate(0, 0) scale(1); }
-            33% { transform: translate(80px, -80px) scale(1.1); }
-            66% { transform: translate(-80px, 80px) scale(0.9); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
         }
 
-        .shape-1 {
-            width: 400px;
-            height: 400px;
-            background: #667eea;
-            top: -100px;
-            left: -100px;
-        }
-
-        .shape-2 {
-            width: 350px;
-            height: 350px;
-            background: #764ba2;
-            bottom: -100px;
-            right: -100px;
-            animation-delay: 7s;
-        }
-
-        /* Login Container */
-        .login-container {
-            background: rgba(255, 255, 255, 0.98);
-            backdrop-filter: blur(20px);
-            border-radius: 30px;
-            padding: 50px 45px;
-            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
+        .auth-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
             width: 100%;
-            max-width: 450px;
+            max-width: 420px;
             position: relative;
-            z-index: 10;
-            animation: slideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            z-index: 1;
+            overflow: hidden;
         }
 
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(50px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-
-        @keyframes fadeIn {
-            to { opacity: 1; }
-        }
-
-
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-10px); }
-            75% { transform: translateX(10px); }
-        }
-
-        /* Header */
-        h1 {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        .header-logo {
             text-align: center;
+            padding: 28px 20px 10px;
+        }
+        .header-logo img {
+            width: 60px;
+            height: auto;
             margin-bottom: 10px;
-            font-size: 2rem;
+        }
+        .header-logo h2 {
+            color: #1e293b;
+            font-size: 1.5rem;
             font-weight: 800;
-            animation: fadeIn 0.8s ease 0.5s forwards;
-            opacity: 0;
+        }
+        .header-logo p {
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-top: 4px;
         }
 
-        .subtitle {
-            text-align: center;
-            color: #718096;
-            margin-bottom: 35px;
-            font-size: 0.95rem;
-            line-height: 1.5;
-            animation: fadeIn 0.8s ease 0.6s forwards;
-            opacity: 0;
+        .forms-wrapper {
+            padding: 18px 30px 30px;
         }
 
-        /* Form Styles */
-        form {
-            animation: fadeIn 0.8s ease 0.7s forwards;
-            opacity: 0;
-        }
+        .input-group { margin-bottom: 16px; }
 
-        .form-group {
-            margin-bottom: 24px;
-        }
-
-        label {
+        .input-label {
             display: block;
-            margin-bottom: 10px;
-            color: #2d3748;
+            margin-bottom: 6px;
+            color: #475569;
+            font-size: 0.9rem;
             font-weight: 600;
-            font-size: 0.95rem;
         }
 
-        .input-wrapper {
-            position: relative;
-        }
-
-        input[type="text"],
-        input[type="password"] {
+        .input-field {
             width: 100%;
-            padding: 14px 18px;
+            padding: 12px 16px;
             border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            background: white;
-            font-family: inherit;
-        }
-
-        input[type="text"]:focus,
-        input[type="password"]:focus {
+            border-radius: 10px;
+            font-size: 0.95rem;
+            transition: all 0.2s;
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
-            transform: translateY(-2px);
+            background: #f8fafc;
         }
-
-        input.error {
+        .input-field:focus {
+            border-color: #6366f1;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+        .input-field.error {
             border-color: #ef4444;
             background: #fef2f2;
         }
 
-        input.error:focus {
-            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.12);
+        /* ✅ supaya teks/password tidak masuk ke area tombol mata */
+        .input-has-toggle {
+            padding-right: 52px !important;
         }
 
-        /* Toggle Password Button */
-        .toggle-password {
-            position: absolute;
-            right: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            cursor: pointer;
-            font-size: 1.3rem;
-            transition: all 0.3s ease;
-            user-select: none;
-        }
-
-        .toggle-password:hover {
-            transform: translateY(-50%) scale(1.1);
-        }
-
-        /* Error text inline */
-        .error-text {
-            color: #dc2626;
-            font-size: 0.85rem;
+        .error-msg {
+            color: #ef4444;
+            font-size: 0.82rem;
             margin-top: 6px;
             display: flex;
             align-items: center;
             gap: 6px;
-            font-weight: 500;
-            opacity: 0;
-            transform: translateY(-5px);
-            animation: slideInError 0.3s ease forwards;
+            line-height: 1.2;
         }
 
-        @keyframes slideInError {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Messages */
-        .error-message,
-        .success-message {
-            padding: 14px 18px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            font-size: 0.9rem;
-            animation: slideInMessage 0.4s ease;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        @keyframes slideInMessage {
-            from {
-                opacity: 0;
-                transform: translateX(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        .error-message {
-            background: linear-gradient(135deg, #fed7d7 0%, #feb2b2 100%);
-            color: #c53030;
-            border: 2px solid #fc8181;
-        }
-
-        .error-message::before {
-            content: '⚠️';
-            font-size: 1.2rem;
-        }
-
-        .success-message {
-            background: linear-gradient(135deg, #c6f6d5 0%, #9ae6b4 100%);
-            color: #276749;
-            border: 2px solid #68d391;
-        }
-
-        .success-message::before {
-            content: '✓';
-            font-size: 1.2rem;
-        }
-
-        /* Submit Button */
-        .btn {
+        .btn-submit {
             width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 14px;
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
             color: white;
             border: none;
-            border-radius: 12px;
-            font-size: 1.05rem;
+            border-radius: 10px;
+            font-size: 1rem;
             font-weight: 700;
             cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 8px;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+            transition: transform 0.1s, box-shadow 0.2s;
+            margin-top: 10px;
         }
-
-        .btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-            transition: left 0.3s ease;
-            z-index: -1;
-        }
-
-        .btn:hover::before {
-            left: 0;
-        }
-
-        .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.6);
-        }
-
-        .btn:active {
+        .btn-submit:hover {
             transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
         }
+        .btn-submit:active { transform: translateY(1px); }
 
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        /* Links */
-        .links {
-            text-align: center;
-            margin-top: 28px;
-            animation: fadeIn 0.8s ease 0.9s forwards;
-            opacity: 0;
-        }
-
-        .links a {
-            color: #667eea;
-            text-decoration: none;
+        .alert {
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 16px;
             font-size: 0.9rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            display: inline-block;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            line-height: 1.3;
+        }
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        .alert-success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
         }
 
-        .links a:hover {
-            color: #5a67d8;
-            transform: translateY(-2px);
+        .actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 2px 0 16px;
+            font-size: 0.88rem;
+        }
+        .remember-me {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #475569;
+            cursor: pointer;
+            user-select: none;
+        }
+        .checkbox {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            cursor: pointer;
         }
 
-        /* Heart Decorations */
-        .heart {
+        /* Toggle Password Button */
+        .toggle-pass-btn {
             position: absolute;
-            font-size: 1.2rem;
-            opacity: 0.2;
-            animation: heartFloat 3s ease-in-out infinite;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 6px;
+            color: #64748b;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .toggle-pass-btn:hover { color: #4f46e5; }
+        .toggle-pass-btn svg { width: 18px; height: 18px; display: block; }
+
+        @media (max-width: 420px) {
+            .forms-wrapper { padding: 16px 18px 22px; }
+        }
+        /* =========================
+        HIDE BROWSER DEFAULT EYE ICON
+        (Chrome/Edge/IE)
+        ========================= */
+
+        /* Edge/IE legacy */
+        input[type="password"]::-ms-reveal,
+        input[type="password"]::-ms-clear {
+            display: none;
         }
 
-        @keyframes heartFloat {
-            0%, 100% { transform: translateY(0) scale(1); }
-            50% { transform: translateY(-15px) scale(1.1); }
+        /* Chromium (Chrome/Edge) autofill credentials button */
+        input[type="password"]::-webkit-credentials-auto-fill-button {
+            visibility: hidden;
+            display: none !important;
+            pointer-events: none;
         }
 
-        .heart-1 { top: 30px; left: 35px; animation-delay: 0s; }
-        .heart-2 { top: 70px; right: 40px; animation-delay: 1s; }
-        .heart-3 { bottom: 90px; left: 45px; animation-delay: 2s; }
-        .heart-4 { bottom: 50px; right: 35px; animation-delay: 1.5s; }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .login-container {
-                padding: 40px 35px;
-                max-width: 420px;
-            }
-
-            h1 {
-                font-size: 1.85rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            body {
-                padding: 15px;
-            }
-
-            .login-container {
-                padding: 35px 28px;
-                border-radius: 25px;
-            }
-
-            h1 {
-                font-size: 1.7rem;
-            }
-
-            .subtitle {
-                font-size: 0.9rem;
-            }
-
-            input[type="text"],
-            input[type="password"] {
-                padding: 12px 16px;
-                font-size: 0.95rem;
-            }
-
-            .btn {
-                padding: 14px;
-                font-size: 1rem;
-            }
-
-            .heart {
-                display: none;
-            }
-        }
-
-        @media (max-width: 375px) {
-            .login-container {
-                padding: 30px 24px;
-            }
-        }
-
-        /* Responsive for larger screens like 1300px width */
-        @media (min-width: 1300px) {
-            .login-container {
-                max-width: 500px;
-                padding: 60px 50px;
-            }
-
-            h1 {
-                font-size: 2.2rem;
-                margin-bottom: 15px;
-            }
-
-            .subtitle {
-                font-size: 1rem;
-                margin-bottom: 40px;
-            }
-
-            input[type="text"],
-            input[type="password"] {
-                padding: 16px 20px;
-                font-size: 1.05rem;
-            }
-
-            .btn {
-                padding: 18px;
-                font-size: 1.1rem;
-            }
-
-            .bg-shape.shape-1 {
-                width: 500px;
-                height: 500px;
-            }
-
-            .bg-shape.shape-2 {
-                width: 450px;
-                height: 450px;
-            }
+        /* Kadang muncul juga dekorasi bawaan */
+        input[type="password"]::-webkit-textfield-decoration-container {
+            visibility: hidden;
         }
     </style>
 </head>
 <body>
-    <!-- Background Shapes -->
-    <div class="bg-shape shape-1"></div>
-    <div class="bg-shape shape-2"></div>
 
-    <div class="login-container">
-        <!-- Login Content -->
-        <h1>Admin Login</h1>
-        <p class="subtitle">Masuk ke dashboard admin untuk mengelola sistem PKL</p>
+    <div class="bg-shape" style="top: -100px; left: -100px; width: 500px; height: 500px; background: #6366f1;"></div>
+    <div class="bg-shape" style="bottom: -100px; right: -100px; width: 400px; height: 400px; background: #ec4899; animation-delay: -5s;"></div>
 
-        @if(session('success'))
-            <div class="success-message">
-                {{ session('success') }}
-            </div>
-        @endif
+    <div class="auth-container">
 
-        @if($errors->any())
-            <div class="error-message">
-                @foreach($errors->all() as $error)
-                    {{ $error }}<br>
-                @endforeach
-            </div>
-        @endif
+        <div class="header-logo">
+            <img src="{{ asset('image/bps.png') }}" alt="Logo BPS">
+            <h2>Admin Login</h2>
+            <p>Masuk untuk mengelola data PKL</p>
+        </div>
 
-        <form method="POST" action="{{ route('admin.login') }}" id="login-form">
-            @csrf
+        <div class="forms-wrapper">
 
-            <div class="form-group">
-                <label for="username">👤 Username</label>
-                <input
-                    type="text"
-                    id="username"
-                    name="username"
-                    value="{{ old('username') }}"
-                    placeholder="Masukkan username"
-                    required
-                >
-            </div>
+            @if(session('success'))
+                <div class="alert alert-success">
+                    <div>{{ session('success') }}</div>
+                </div>
+            @endif
 
-            <div class="form-group">
-                <label for="password">🔒 Password</label>
-                <div class="input-wrapper">
+            @if(session('error'))
+                <div class="alert alert-error">
+                    <div>{{ session('error') }}</div>
+                </div>
+            @endif
+
+            @if ($errors->any())
+                <div class="alert alert-error">
+                    <div>Periksa kembali input Anda. Ada data yang belum sesuai.</div>
+                </div>
+            @endif
+
+            <form action="{{ route('admin.login.post') }}" method="POST" autocomplete="off">
+                @csrf
+
+                <div class="input-group">
+                    <label class="input-label">Username</label>
                     <input
-                        type="password"
-                        id="password"
-                        name="password"
-                        placeholder="Masukkan password"
+                        type="text"
+                        name="username"
+                        class="input-field @error('username') error @enderror"
+                        placeholder="Masukkan username"
                         required
+                        autocomplete="off"
+                        autocorrect="off"
+                        autocapitalize="none"
+                        spellcheck="false"
+                        value=""
                     >
-                    <span class="toggle-password" id="toggle-password">👁️</span>
+                    @error('username')
+                        <div class="error-msg">{{ $message }}</div>
+                    @enderror
                 </div>
-                <div id="password-error" class="error-text" style="display: none;">
-                    ⚠️ Password minimal harus 8 karakter!
+
+                <div class="input-group">
+                    <label class="input-label">Password</label>
+                    <div style="position: relative;">
+                        <input
+                            type="password"
+                            id="login-pass"
+                            name="password"
+                            class="input-field input-has-toggle"
+                            placeholder="Masukkan password"
+                            required
+                            autocomplete="new-password"
+                            autocorrect="off"
+                            autocapitalize="none"
+                            spellcheck="false"
+                        >
+
+                        {{-- ✅ hanya 1 icon SVG (tidak mungkin dobel) --}}
+                        <button
+                            type="button"
+                            class="toggle-pass-btn"
+                            id="togglePassBtn"
+                            aria-label="Tampilkan/Sembunyikan Password"
+                        >
+                            <svg id="toggleIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <!-- default: eye (ikon yang kanan bisa kamu anggap ini) -->
+                                <path id="iconPath1" d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"></path>
+                                <circle id="iconCircle" cx="12" cy="12" r="3"></circle>
+                                <!-- garis coret (hidden by default) -->
+                                <path id="iconSlash" d="M3 3l18 18" style="display:none;"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    @error('password')
+                        <div class="error-msg">{{ $message }}</div>
+                    @enderror
                 </div>
-            </div>
 
-            <button type="submit" class="btn"> Masuk ke Dashboard</button>
-        </form>
+                <div class="actions">
+                    <label class="remember-me">
+                        <input type="checkbox" name="remember" class="checkbox">
+                        Ingat Saya
+                    </label>
+                </div>
 
-        <div class="links">
-            <a href="{{ route('admin.register') }}"> Belum punya akun? Daftar di sini</a>
+                <button type="submit" class="btn-submit">Masuk Sekarang</button>
+            </form>
+
         </div>
     </div>
 
     <script>
-        // Password visibility toggle
-        const togglePassword = document.getElementById('toggle-password');
-        const passwordInput = document.getElementById('password');
-        const leftEye = document.getElementById('left-eye');
-        const rightEye = document.getElementById('right-eye');
+        (function () {
+            const input = document.getElementById('login-pass');
+            const btn = document.getElementById('togglePassBtn');
 
-        // Toggle password visibility
-        togglePassword.addEventListener('click', function() {
-            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-            passwordInput.setAttribute('type', type);
-            this.textContent = type === 'password' ? '👁️' : '🙈';
-        });
+            const slash = document.getElementById('iconSlash');
 
+            btn.addEventListener('click', function () {
+                const isHidden = input.type === 'password';
 
-        passwordInput.addEventListener('blur', function() {
-            if (this.value.length === 0) {
-                leftEye.classList.remove('closed');
-                rightEye.classList.remove('closed');
-            }
-        });
+                input.type = isHidden ? 'text' : 'password';
 
-        passwordInput.addEventListener('input', function() {
-            const errorDiv = document.getElementById('password-error');
-            
-            if (this.value.length > 0) {
-                leftEye.classList.add('closed');
-                rightEye.classList.add('closed');
-            } else {
-                leftEye.classList.remove('closed');
-                rightEye.classList.remove('closed');
-            }
-
-            // Show/hide error inline
-            if (this.value.length > 0 && this.value.length < 8) {
-                errorDiv.style.display = 'flex';
-                this.classList.add('error');
-            } else {
-                errorDiv.style.display = 'none';
-                this.classList.remove('error');
-            }
-        });
-
-
-        // Form validation for password length
-        const loginForm = document.getElementById('login-form');
-        loginForm.addEventListener('submit', function(e) {
-            const passwordValue = passwordInput.value;
-            const errorDiv = document.getElementById('password-error');
-            
-            if (passwordValue.length < 8) {
-                e.preventDefault();
-                
-                // Show error
-                errorDiv.style.display = 'flex';
-                passwordInput.classList.add('error');
-                passwordInput.focus();
-            }
-        });
-
-        // Add ripple effect on button click
-        const button = document.querySelector('.btn');
-        button.addEventListener('click', function(e) {
-            const ripple = document.createElement('div');
-            ripple.style.position = 'absolute';
-            ripple.style.borderRadius = '50%';
-            ripple.style.background = 'rgba(255, 255, 255, 0.6)';
-            ripple.style.width = ripple.style.height = '100px';
-            ripple.style.left = e.clientX - this.offsetLeft - 50 + 'px';
-            ripple.style.top = e.clientY - this.offsetTop - 50 + 'px';
-            ripple.style.animation = 'ripple 0.6s ease-out';
-            ripple.style.pointerEvents = 'none';
-
-            this.appendChild(ripple);
-
-            setTimeout(() => ripple.remove(), 600);
-        });
-
-        // Add CSS for ripple animation
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes ripple {
-                from {
-                    transform: scale(0);
-                    opacity: 1;
-                }
-                to {
-                    transform: scale(2);
-                    opacity: 0;
-                }
-            }
-        `;
-        document.head.appendChild(style);
+                // kalau sedang ditampilkan (type=text) -> tampilkan coretan (eye-off)
+                // kalau disembunyikan (type=password) -> sembunyikan coretan (eye)
+                slash.style.display = isHidden ? 'block' : 'none';
+            });
+        })();
     </script>
 </body>
 </html>

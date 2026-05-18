@@ -55,7 +55,10 @@ class PendaftaranStatusNotification extends Notification implements ShouldQueue
                     ->line('Terima kasih telah mendaftar PKL di BPS!');
         } elseif ($this->status == 'rejected') {
             $message->line('Maaf, pendaftaran PKL Anda telah ditolak.')
-                    ->line('Silakan hubungi admin untuk informasi lebih lanjut.')
+                    ->when(!empty($this->pendaftaran->rejection_reason), function ($mail) {
+                        $mail->line('Alasan penolakan: ' . $this->pendaftaran->rejection_reason);
+                    })
+                    ->line('Silakan hubungi admin jika Anda membutuhkan informasi lebih lanjut.')
                     ->action('Lihat Profil', url('/profile'))
                     ->line('Terima kasih.');
         } elseif ($this->status == 'completed') {

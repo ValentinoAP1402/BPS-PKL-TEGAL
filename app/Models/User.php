@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Support\Facades\Storage;
 
 class User extends Authenticatable
 {
@@ -23,6 +24,9 @@ class User extends Authenticatable
         'password',
         'google_id',
         'avatar',
+        'asal_sekolah',
+        'jurusan',
+        'no_telp',
     ];
 
     /**
@@ -45,6 +49,23 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
+    public function getAvatarUrlAttribute(): string
+    {
+        if (empty($this->avatar)) {
+            return asset('image/user.png');
+        }
+
+        if (filter_var($this->avatar, FILTER_VALIDATE_URL)) {
+            return $this->avatar;
+        }
+
+        $path = ltrim(str_replace('storage/', '', $this->avatar), '/');
+
+        return Storage::disk('public')->exists($path)
+            ? asset('storage/' . $path)
+            : asset('image/user.png');
+    }
+    
     public function userRole()
     {
         return $this->hasOne(UserRole::class);

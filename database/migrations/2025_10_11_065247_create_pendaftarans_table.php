@@ -13,10 +13,11 @@ return new class extends Migration
     {
         Schema::create('pendaftarans', function (Blueprint $table) {
             $table->id();
+        $table->foreignId('user_id');
         $table->string('nama_lengkap');
         $table->string('asal_sekolah');
         $table->string('jurusan');
-        $table->string('email')->unique();
+        $table->string('email');
         $table->string('no_hp');
         $table->string('surat_keterangan_pkl'); // Path file
         $table->date('tanggal_mulai_pkl');

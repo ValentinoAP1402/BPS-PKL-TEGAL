@@ -1,631 +1,174 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Kuota PKL</title>
-    <link rel="shortcut icon" href="{{ asset('image/bps.png') }}" type="image/x-icon">
+@extends('admin.layouts.app')
+
+@section('title', 'Edit Kuota PKL')
+
+{{-- BRANDING NAVBAR --}}
+@section('navbar-branding')
+    <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 38px; height: 38px; background: white; border: 1px solid #e2e8f0; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #d97706; box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
+            {{-- Icon Edit --}}
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+        </div>
+        <div style="display: flex; flex-direction: column;">
+            <span style="font-size: 1rem; font-weight: 700; color: #0f172a; letter-spacing: -0.02em;">Edit Kuota</span>
+            <span style="font-size: 0.75rem; color: #64748b; font-weight: 500;">Perbarui Data Bulanan</span>
+        </div>
+    </div>
+@endsection
+
+{{-- ACTIONS NAVBAR --}}
+@section('navbar-actions')
+    <a href="{{ route('admin.kuotas.index') }}" 
+       style="display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; background: white; color: #64748b; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 0.85rem; border: 1px solid #e2e8f0; transition: all 0.2s;">
+        <span>✕</span> Batal & Kembali
+    </a>
+@endsection
+
+@section('content')
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* Card Style */
+        .edit-card { 
+            background: white; 
+            border-radius: 16px; 
+            border: 1px solid #e2e8f0; 
+            max-width: 550px; 
+            margin: 20px auto; 
+            padding: 32px; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); 
+            animation: fadeInUp 0.4s ease-out; 
+        }
+
+        .edit-header { text-align: center; margin-bottom: 32px; }
+        .edit-title { font-size: 1.25rem; font-weight: 700; color: #1e293b; margin-bottom: 8px; }
+        .edit-desc { font-size: 0.9rem; color: #64748b; }
+
+        /* Form Elements */
+        .form-group { margin-bottom: 24px; }
         
-        body {
-            background: linear-gradient(135deg, #fef3f4 0%, #fff7ed 50%, #f0f9ff 100%);
-            font-family: 'Inter', 'Segoe UI', Tahoma, sans-serif;
-            min-height: 100vh;
-            padding-bottom: 40px;
-            color: #1e293b;
+        .form-label { 
+            display: block; font-size: 0.9rem; font-weight: 600; color: #334155; 
+            margin-bottom: 8px; 
         }
         
-        /* Navbar */
-        .navbar { 
-            background: #ffffff;
-            padding: 20px 32px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            border-bottom: 1px solid #e8ecf1;
+        .input-wrapper { position: relative; }
+        
+        .modern-input { 
+            width: 100%; padding: 12px 16px; padding-left: 42px; /* Space for icon */
+            border: 1px solid #cbd5e1; border-radius: 10px; 
+            font-size: 0.95rem; color: #1e293b; outline: none; transition: 0.2s; 
         }
         
-        .navbar-content {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .modern-input:focus { 
+            border-color: #f59e0b; /* Amber focus */
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1); 
         }
-        
-        .logo {
-            font-weight: 700;
-            font-size: 1.4em;
-            color: #2563eb;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+
+        .input-icon {
+            position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+            color: #94a3b8; pointer-events: none;
         }
-        
-        
-        .back-link {
-            color: #2563eb;
-            text-decoration: none;
-            font-weight: 600;
-            padding: 10px 20px;
-            border-radius: 10px;
-            transition: all 0.3s ease;
-            background: #eff6ff;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+
+        .modern-input:focus + .input-icon { color: #f59e0b; }
+
+        /* Helper & Error */
+        .helper-text { font-size: 0.8rem; color: #64748b; margin-top: 6px; display: flex; align-items: center; gap: 4px; }
+        .error-msg { color: #ef4444; font-size: 0.85rem; margin-top: 6px; display: flex; align-items: center; gap: 4px; }
+
+        /* Submit Button */
+        .btn-submit { 
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); 
+            color: white; width: 100%; padding: 14px; border: none; 
+            border-radius: 10px; font-weight: 600; font-size: 1rem; 
+            cursor: pointer; transition: 0.2s; display: flex; 
+            align-items: center; justify-content: center; gap: 8px;
+            box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.3);
         }
-        
-        .back-link:hover {
-            background: #dbeafe;
-            transform: translateX(-4px);
+        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 6px 10px -1px rgba(245, 158, 11, 0.4); }
+
+        /* Info Alert inside form */
+        .info-alert {
+            background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px;
+            padding: 12px; margin-bottom: 24px; font-size: 0.85rem; color: #92400e;
+            display: flex; gap: 8px; align-items: flex-start;
         }
-        
-        .back-link::before {
-            content: '←';
-            font-size: 1.2em;
-        }
-        
-        /* Container */
-        .container {
-            max-width: 1000px;
-            margin: 32px auto;
-            padding: 0 24px;
-        }
-        
-        /* Header Section */
-        .header-section {
-            background: #ffffff;
-            border-radius: 16px;
-            padding: 32px;
-            margin-bottom: 24px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-            border: 1px solid #e8ecf1;
-            text-align: center;
-            animation: fadeIn 0.4s ease-out;
-        }
-        
-        h1 {
-            font-size: 2rem;
-            color: #1e293b;
-            margin-bottom: 8px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-        }
-        
-        .subtitle {
-            color: #64748b;
-            font-size: 1rem;
-            margin-top: 8px;
-        }
-        
-        /* Form Container */
-        .form-container {
-            background: #ffffff;
-            border-radius: 16px;
-            padding: 40px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-            border: 1px solid #e8ecf1;
-            animation: fadeIn 0.6s ease-out;
-        }
-        
-        /* Success Alert */
-        .alert-success {
-            padding: 18px 24px;
-            background: linear-gradient(135deg, #ecfdf5, #d1fae5);
-            color: #065f46;
-            border-radius: 14px;
-            font-weight: 500;
-            margin-bottom: 24px;
-            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
-            display: flex;
-            align-items: flex-start;
-            gap: 14px;
-            border: 2px solid #6ee7b7;
-            animation: slideInAlert 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .alert-success::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 5px;
-            background: linear-gradient(180deg, #10b981, #059669);
-            animation: progressBar 3s ease-out;
-        }
-        
-        .alert-icon {
-            font-size: 1.5em;
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #6ee7b7, #10b981);
-            color: #ffffff;
-            animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-        }
-        
-        .alert-content {
-            flex: 1;
-        }
-        
-        .alert-title {
-            font-weight: 700;
-            font-size: 1.05em;
-            margin-bottom: 4px;
-        }
-        
-        .alert-message {
-            opacity: 0.9;
-            line-height: 1.5;
-        }
-        
-        /* Info Box */
-        .info-box {
-            background: linear-gradient(135deg, #eff6ff, #dbeafe);
-            border-left: 4px solid #3b82f6;
-            padding: 18px 20px;
-            border-radius: 12px;
-            margin-bottom: 24px;
-            display: flex;
-            align-items: start;
-            gap: 12px;
-            animation: slideIn 0.5s ease-out;
-            border: 1px solid #93c5fd;
-        }
-        
-        .info-box-icon {
-            font-size: 1.5em;
-            flex-shrink: 0;
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        .info-box-content {
-            flex: 1;
-        }
-        
-        .info-box-title {
-            font-weight: 700;
-            color: #1e40af;
-            margin-bottom: 6px;
-            font-size: 0.95rem;
-        }
-        
-        .info-box-text {
-            color: #1e40af;
-            font-size: 0.9rem;
-            line-height: 1.6;
-            opacity: 0.9;
-        }
-        
-        /* Current Value Display */
-        .current-value {
-            background: linear-gradient(135deg, #fef3c7, #fde68a);
-            border-left: 4px solid #f59e0b;
-            padding: 20px 24px;
-            border-radius: 12px;
-            margin-bottom: 32px;
-            animation: slideIn 0.5s ease-out 0.1s backwards;
-            border: 1px solid #fcd34d;
-        }
-        
-        .current-value-title {
-            font-weight: 700;
-            color: #92400e;
-            margin-bottom: 14px;
-            font-size: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .current-value-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-        }
-        
-        .current-value-item {
-            background: rgba(255, 255, 255, 0.7);
-            padding: 14px 18px;
-            border-radius: 10px;
-            border: 1px solid rgba(245, 158, 11, 0.3);
-        }
-        
-        .current-value-label {
-            color: #92400e;
-            font-weight: 600;
-            font-size: 0.85rem;
-            margin-bottom: 6px;
-            opacity: 0.8;
-        }
-        
-        .current-value-data {
-            color: #78350f;
-            font-weight: 700;
-            font-size: 1.1rem;
-        }
-        
-        /* Form Group */
-        .form-group {
-            margin-bottom: 28px;
-        }
-        
-        label {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 10px;
-            font-weight: 600;
-            color: #1e293b;
-            font-size: 1rem;
-        }
-        
-        .input-wrapper {
-            position: relative;
-        }
-        
-        input[type="text"],
-        input[type="number"] {
-            width: 100%;
-            padding: 14px 18px;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            background: #f8fafc;
-            color: #1e293b;
-            font-family: inherit;
-        }
-        
-        input[type="text"]:focus,
-        input[type="number"]:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-            background: #ffffff;
-            transform: translateY(-1px);
-        }
-        
-        input[type="text"]::placeholder,
-        input[type="number"]::placeholder {
-            color: #94a3b8;
-        }
-        
-        .input-hint {
-            display: block;
-            margin-top: 8px;
-            font-size: 0.85rem;
-            color: #64748b;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        
-        .input-hint::before {
-            content: 'ℹ';
-            color: #3b82f6;
-            font-size: 1.1em;
-        }
-        
-        /* Error Messages */
-        .error {
-            color: #dc2626;
-            font-size: 0.9em;
-            margin-top: 8px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            animation: slideIn 0.3s ease-out;
-            background: #fef2f2;
-            padding: 8px 12px;
-            border-radius: 8px;
-            border: 1px solid #fca5a5;
-        }
-        
-        .error::before {
-            content: '⚠';
-            font-size: 1.1em;
-            color: #ef4444;
-        }
-        
-        input.has-error {
-            border-color: #ef4444;
-            background: #fef2f2;
-        }
-        
-        input.has-error:focus {
-            border-color: #ef4444;
-            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
-        }
-        
-        /* Button Group */
-        .button-group {
-            display: flex;
-            gap: 12px;
-            margin-top: 32px;
-            flex-wrap: wrap;
-        }
-        
-        button,
-        .btn-cancel {
-            padding: 14px 28px;
-            border: none;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            text-decoration: none;
-            justify-content: center;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        button::before,
-        .btn-cancel::before {
-            font-size: 1.1em;
-        }
-        
-        button::after,
-        .btn-cancel::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
-        }
-        
-        button:hover::after,
-        .btn-cancel:hover::after {
-            width: 300px;
-            height: 300px;
-        }
-        
-        button[type="submit"] {
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
-            color: white;
-            flex: 1;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-        }
-        
-        button[type="submit"]:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
-        }
-        
-        button[type="submit"]::before {
-            content: '✓';
-        }
-        
-        .btn-cancel {
-            background: linear-gradient(135deg, #64748b, #475569);
-            color: white;
-            flex: 1;
-            box-shadow: 0 4px 12px rgba(100, 116, 139, 0.3);
-        }
-        
-        .btn-cancel:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(100, 116, 139, 0.4);
-        }
-        
-        .btn-cancel::before {
-            content: '✕';
-        }
-        
-        /* Animations */
-        @keyframes fadeIn {
-            from { 
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to { 
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateX(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-        
-        @keyframes slideInAlert {
-            from {
-                opacity: 0;
-                transform: translateX(-100px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-        
-        @keyframes bounceIn {
-            0% {
-                transform: scale(0);
-                opacity: 0;
-            }
-            50% {
-                transform: scale(1.2);
-            }
-            100% {
-                transform: scale(1);
-                opacity: 1;
-            }
-        }
-        
-        @keyframes progressBar {
-            from {
-                transform: scaleY(1);
-            }
-            to {
-                transform: scaleY(0);
-            }
-        }
-        
-        /* Responsive */
-        @media (max-width: 768px) {
-            .container { padding: 0 16px; }
-            .navbar { padding: 16px 20px; }
-            .header-section { padding: 24px; }
-            .form-container { padding: 28px 24px; }
-            h1 { 
-                font-size: 1.6rem;
-                flex-direction: column;
-            }
-            .button-group { flex-direction: column; }
-            button, .btn-cancel { width: 100%; }
-            .current-value-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .logo { font-size: 1.2em; }
-            h1 { font-size: 1.4rem; }
-            .form-container { padding: 24px 20px; }
-            .back-link { padding: 8px 16px; font-size: 0.9em; }
-        }
+
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
-</head>
-<body>
-    <div class="navbar">
-        <div class="navbar-content">
-            <span class="logo">Admin Dashboard</span>
-            <a href="{{ route('admin.kuotas.index') }}" class="back-link">Kembali</a>
+
+    <div class="edit-card">
+        <div class="edit-header">
+            <h1 class="edit-title">Perbarui Informasi Kuota</h1>
+            <p class="edit-desc">Silakan ubah data bulan atau jumlah kuota di bawah ini.</p>
         </div>
-    </div>
-    
-    <div class="container">
-        <div class="header-section">
-            <h1>✏️ Edit Kuota PKL</h1>
-            <p class="subtitle">Perbarui kuota pendaftaran untuk periode tertentu</p>
+
+        <div class="info-alert">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            <span>
+                Perubahan pada <strong>Jumlah Kuota</strong> akan langsung mempengaruhi ketersediaan slot pendaftaran di halaman depan.
+            </span>
         </div>
-        
-        {{-- Alert Success jika ada --}}
-        @if(session('success'))
-            <div class="alert-success">
-                <div class="alert-icon">✓</div>
-                <div class="alert-content">
-                    <div class="alert-title">Berhasil Diperbarui!</div>
-                    <div class="alert-message">{{ session('success') }}</div>
-                </div>
-            </div>
-        @endif
-        
-        <div class="form-container">
-            <div class="info-box">
-                <div class="info-box-icon">💡</div>
-                <div class="info-box-content">
-                    <div class="info-box-title">Informasi</div>
-                    <div class="info-box-text">
-                        Anda sedang mengedit kuota yang sudah ada. Pastikan data yang Anda masukkan sudah benar sebelum menyimpan.
-                    </div>
-                </div>
-            </div>
+
+        <form action="{{ route('admin.kuotas.update', $kuota->id) }}" method="POST">
+            @csrf
+            @method('PUT')
             
-            <div class="current-value">
-                <div class="current-value-title">📊 Nilai Saat Ini</div>
-                <div class="current-value-grid">
-                    <div class="current-value-item">
-                        <div class="current-value-label">📅 Bulan</div>
-                        <div class="current-value-data">{{ $kuota->bulan }}</div>
-                    </div>
-                    <div class="current-value-item">
-                        <div class="current-value-label">🎯 Jumlah Kuota</div>
-                        <div class="current-value-data">{{ $kuota->jumlah_kuota }}</div>
+            {{-- Input Bulan --}}
+            <div class="form-group">
+                <label for="bulan" class="form-label">Nama Bulan & Tahun</label>
+                <div class="input-wrapper">
+                    <input 
+                        type="text" 
+                        id="bulan" 
+                        name="bulan" 
+                        class="modern-input"
+                        value="{{ old('bulan', $kuota->bulan) }}" 
+                        placeholder="Contoh: Januari 2025" 
+                        required
+                    >
+                    <div class="input-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                     </div>
                 </div>
+                @error('bulan')
+                    <span class="error-msg">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        {{ $message }}
+                    </span>
+                @else
+                    <div class="helper-text">Format disarankan: [Nama Bulan] [Tahun]</div>
+                @enderror
             </div>
-            
-            <form action="{{ route('admin.kuotas.update', $kuota) }}" method="POST">
-                @csrf
-                @method('PUT')
-                
-                <div class="form-group">
-                    <label for="bulan">
-                        📅 Bulan dan Tahun
-                    </label>
-                    <div class="input-wrapper">
-                        <input 
-                            type="text" 
-                            id="bulan" 
-                            name="bulan" 
-                            value="{{ old('bulan', $kuota->bulan) }}" 
-                            placeholder="Contoh: Januari 2024"
-                            class="@error('bulan') has-error @enderror"
-                            required
-                        >
-                        <span class="input-hint">Format: [Nama Bulan] [Tahun]</span>
+
+            {{-- Input Jumlah Kuota --}}
+            <div class="form-group">
+                <label for="jumlah_kuota" class="form-label">Total Kapasitas (Slot)</label>
+                <div class="input-wrapper">
+                    <input 
+                        type="number" 
+                        id="jumlah_kuota" 
+                        name="jumlah_kuota" 
+                        class="modern-input"
+                        value="{{ old('jumlah_kuota', $kuota->jumlah_kuota) }}" 
+                        min="1" 
+                        placeholder="Contoh: 50" 
+                        required
+                    >
+                    <div class="input-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                     </div>
-                    @error('bulan') 
-                        <div class="error">{{ $message }}</div> 
-                    @enderror
                 </div>
-                
-                <div class="form-group">
-                    <label for="jumlah_kuota">
-                        🎯 Jumlah Kuota
-                    </label>
-                    <div class="input-wrapper">
-                        <input
-                            type="number"
-                            id="jumlah_kuota"
-                            name="jumlah_kuota"
-                            value="{{ old('jumlah_kuota', $kuota->jumlah_kuota) }}"
-                            placeholder="Masukkan jumlah kuota"
-                            min="1"
-                            class="@error('jumlah_kuota') has-error @enderror"
-                            required
-                        >
-                        <span class="input-hint">Minimal 1, maksimal tidak terbatas</span>
-                    </div>
-                    @error('jumlah_kuota') 
-                        <div class="error">{{ $message }}</div> 
-                    @enderror
-                </div>
-                
-                <div class="button-group">
-                    <button type="submit">
-                        Update Kuota
-                    </button>
-                    <a href="{{ route('admin.kuotas.index') }}" class="btn-cancel">
-                        Batal
-                    </a>
-                </div>
-            </form>
-        </div>
+                @error('jumlah_kuota')
+                    <span class="error-msg">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        {{ $message }}
+                    </span>
+                @enderror
+            </div>
+
+            <button type="submit" class="btn-submit">
+                Simpan Perubahan
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+            </button>
+        </form>
     </div>
-</body>
-</html>
+@endsection

@@ -35,6 +35,7 @@ class Kernel extends HttpKernel
             \Illuminate\Session\Middleware\StartSession::class,
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
+            \App\Http\Middleware\LogoutAdminWhenLeavingAdmin::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
 
@@ -53,6 +54,7 @@ class Kernel extends HttpKernel
      * @var array<string, class-string|string>
      */
     protected $middlewareAliases = [
+        'admin.portal' => \App\Http\Middleware\AdminPortalAccess::class,
         'auth' => \App\Http\Middleware\Authenticate::class,
         'auth.admin' => \App\Http\Middleware\AdminAuthenticate::class,
         'auth.admin.approved' => \App\Http\Middleware\AdminApprovedMiddleware::class,

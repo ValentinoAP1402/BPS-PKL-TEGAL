@@ -6,13 +6,15 @@ use App\Models\Pendaftaran;
 use App\Models\Kuota;
 use App\Models\SuratUpload;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
 class PendaftaranController extends Controller
 {
+    /**
+     * Halaman Informasi (landing/infomasi kuota + status user)
+     */
     public function index()
     {
         $kuotas = Kuota::all();
@@ -24,126 +26,252 @@ class PendaftaranController extends Controller
         ];
 
         $kuotas = $kuotas->sort(function ($a, $b) use ($monthOrder) {
-            // Parse bulan and tahun from "Bulan Tahun" format
             $aParts = explode(' ', $a->bulan);
             $bParts = explode(' ', $b->bulan);
 
             $aMonth = $monthOrder[$aParts[0]] ?? 0;
             $bMonth = $monthOrder[$bParts[0]] ?? 0;
-            $aYear = (int)($aParts[1] ?? 0);
-            $bYear = (int)($bParts[1] ?? 0);
+            $aYear  = (int)($aParts[1] ?? 0);
+            $bYear  = (int)($bParts[1] ?? 0);
 
-            // Sort by year first, then by month
-            if ($aYear !== $bYear) {
-                return $aYear <=> $bYear;
-            }
+            if ($aYear !== $bYear) return $aYear <=> $bYear;
             return $aMonth <=> $bMonth;
         })->values();
 
         $pendaftaranStatus = null;
         $suratMitraNotification = false;
+
         if (Auth::check()) {
-            $pendaftaran = Pendaftaran::where('email', Auth::user()->email)->first();
+            // ✅ ambil pendaftaran TERBARU (karena user bisa daftar berkali-kali)
+            $pendaftaran = Pendaftaran::where('user_id', Auth::id())
+                ->latest()
+                ->first();
+
             if ($pendaftaran) {
                 $pendaftaranStatus = $pendaftaran->status;
+
                 if ($pendaftaran->surat_mitra_signed && !session('surat_mitra_visited_' . $pendaftaran->id)) {
                     $suratMitraNotification = true;
                 }
             }
         }
 
-        return view('informasi', compact('kuotas', 'pendaftaranStatus', 'suratMitraNotification')); // Halaman Informasi & Kuota
+        return view('informasi', compact('kuotas', 'pendaftaranStatus', 'suratMitraNotification'));
     }
 
+    /**
+     * Tampilkan form pendaftaran
+     */
     public function create()
     {
         if (!Auth::check()) {
-            return redirect()->route('auth.google')->with('error', 'Anda harus login terlebih dahulu untuk mendaftar PKL.');
+            return redirect()->route('login')->with('error', 'Anda harus login terlebih dahulu untuk mendaftar PKL.');
         }
-        return view('pendaftaran.form'); // Form Pendaftaran
+
+        $user = Auth::user();
+        $profileComplete = !empty($user->asal_sekolah) && !empty($user->jurusan) && !empty($user->no_telp);
+
+        if (!$profileComplete) {
+            return redirect()->route('profile')->with('error', 'Lengkapi profil Anda terlebih dahulu sebelum mendaftar PKL.');
+        }
+
+        /**
+         * ✅ FIX UTAMA:
+         * User hanya dilarang daftar lagi jika masih ada pengajuan AKTIF (pending/diproses).
+         * Jika statusnya rejected/approved/completed => boleh daftar lagi.
+         */
+        $masihAktif = Pendaftaran::where('user_id', Auth::id())
+            ->whereIn('status', ['pending', 'menunggu', 'diproses', 'process'])
+            ->exists();
+
+        if ($masihAktif) {
+            return redirect()->route('home')->with('error', 'Anda masih memiliki pengajuan PKL yang sedang diproses.');
+        }
+
+        return view('pendaftaran.form', compact('profileComplete'));
     }
 
+    /**
+     * Simpan pendaftaran
+     */
     public function store(Request $request)
     {
+        // Pastikan user sudah login
         if (!Auth::check()) {
-            return redirect()->route('auth.google')->with('error', 'Anda harus login terlebih dahulu untuk mendaftar PKL.');
+            return redirect()->route('login')->with('error', 'Anda harus login terlebih dahulu untuk mendaftar PKL.');
         }
 
-        // Log request data untuk debug
-        Log::info('Pendaftaran store request', $request->all());
+        $user = Auth::user();
 
-        try {
-            $request->validate([
-                'nama_lengkap' => 'required|string|max:255',
-                'asal_sekolah' => 'required|string|max:255',
-                'jurusan' => 'required|string|max:255',
-                'email' => 'required|email|unique:pendaftarans,email',
-                'no_hp' => 'required|string|max:20',
-                'surat_keterangan_pkl' => 'required|file|mimes:pdf|max:2048',
-                'tanggal_mulai_pkl' => 'required|date',
-                'tanggal_selesai_pkl' => 'required|date|after_or_equal:tanggal_mulai_pkl',
-            ]);
+        // Cek apakah profil sudah lengkap
+        $profileComplete = !empty($user->asal_sekolah) && !empty($user->jurusan) && !empty($user->no_telp);
 
-            Log::info('Validation passed');
-
-            // Tentukan bulan tahun untuk referensi
-            $tanggalMulai = Carbon::parse($request->tanggal_mulai_pkl);
-            $bulanTahun = $tanggalMulai->translatedFormat('F Y');
-
-            // Cari kuota untuk bulan tersebut
-            $kuota = Kuota::where('bulan', $bulanTahun)->first();
-
-            if (!$kuota) {
-                return redirect()->back()->with('error', 'Kuota PKL untuk periode ' . $bulanTahun . ' belum tersedia. Silakan hubungi admin.');
-            }
-
-            // Periksa apakah kuota masih tersedia
-            if (!$kuota->isAvailable()) {
-                return redirect()->back()->with('error', 'Maaf, kuota PKL untuk periode ' . $bulanTahun . ' sudah penuh.');
-            }
-
-            $path = $request->file('surat_keterangan_pkl')->store('surat_pkl', 'public');
-
-            Log::info('File stored at: ' . $path);
-
-            $pendaftaran = Pendaftaran::create([
-                'nama_lengkap' => $request->nama_lengkap,
-                'asal_sekolah' => $request->asal_sekolah,
-                'jurusan' => $request->jurusan,
-                'email' => $request->email,
-                'no_hp' => $request->no_hp,
-                'surat_keterangan_pkl' => $path,
-                'tanggal_mulai_pkl' => $request->tanggal_mulai_pkl,
-                'tanggal_selesai_pkl' => $request->tanggal_selesai_pkl,
-                'status' => 'pending', // Pastikan default status pending
-                'kuota_id' => $kuota->id, // Set kuota_id
-            ]);
-
-            Log::info('Pendaftaran created with ID: ' . $pendaftaran->id);
-
-            return redirect()->route('pendaftaran.pendaftaran_berhasil');
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::error('Validation failed', $e->errors());
-            throw $e; // Laravel akan handle redirect dengan errors
-        } catch (\Exception $e) {
-            Log::error('Error in pendaftaran store: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Terjadi kesalahan saat menyimpan pendaftaran. Silakan coba lagi.');
+        if (!$profileComplete) {
+            return redirect()->route('profile')->with('error', 'Lengkapi profil Anda terlebih dahulu sebelum mendaftar PKL.');
         }
+
+        // Cek apakah user masih punya pendaftaran yang sedang diproses
+        $masihAktif = Pendaftaran::where('user_id', Auth::id())
+            ->whereIn('status', ['pending', 'menunggu', 'diproses', 'process'])
+            ->exists();
+
+        if ($masihAktif) {
+            return redirect()->back()->with('error', 'Anda masih memiliki pengajuan PKL yang sedang diproses.');
+        }
+
+        // Validasi upload dan tanggal
+        $validationRules = [
+            'surat_keterangan_pkl' => 'required|file|mimes:pdf|max:2048',
+            'tanggal_mulai_pkl' => 'required|date',
+            'tanggal_selesai_pkl' => 'required|date|after_or_equal:tanggal_mulai_pkl',
+        ];
+
+        $request->validate($validationRules);
+
+        // Tentukan bulan tahun dari tanggal mulai
+        Carbon::setLocale('id');
+        $tanggalMulai = Carbon::parse($request->tanggal_mulai_pkl);
+        $bulanTahun = $tanggalMulai->translatedFormat('F Y'); // contoh: Januari 2026
+
+        // Cari kuota berdasarkan bulan
+        $kuota = Kuota::where('bulan', $bulanTahun)->first();
+
+        if (!$kuota) {
+            return redirect()->back()->with('error', 'Kuota PKL untuk periode ' . $bulanTahun . ' belum tersedia. Silakan hubungi admin.');
+        }
+
+        // Cek apakah kuota masih tersedia
+        if (!$kuota->isAvailable()) {
+            return redirect()->back()->with('error', 'Maaf, kuota PKL untuk periode ' . $bulanTahun . ' sudah penuh.');
+        }
+
+        // Upload file ke storage private
+        $path = $request->file('surat_keterangan_pkl')->store('surat_pkl', 'private');
+
+        $pendaftaranAktif = Pendaftaran::where('user_id', Auth::id())
+            ->whereIn('status', ['pending','approved'])
+            ->first();
+
+        if ($pendaftaranAktif) {
+            return back()->with('error','Anda masih memiliki pendaftaran PKL yang sedang diproses.');
+        }
+
+            // Simpan pendaftaran baru
+            Pendaftaran::create([
+            'user_id' => Auth::id(),
+            'kuota_id' => $kuota->id,
+            'surat_keterangan_pkl' => $path,
+            'tanggal_mulai_pkl' => $request->tanggal_mulai_pkl,
+            'tanggal_selesai_pkl' => $request->tanggal_selesai_pkl,
+            'status' => 'pending',
+
+            // Ambil data dari profil user
+            'nama_lengkap' => $user->name,
+            'asal_sekolah' => $user->asal_sekolah,
+            'jurusan' => $user->jurusan,
+            'email' => $user->email,
+            'no_hp' => $user->no_telp,
+        ]);
+
+        return redirect()->route('home')->with('success_registration', true);
     }
 
+    /**
+     * Preview Surat Balasan
+     */
+    public function previewSuratBalasan()
+    {
+        if (!Auth::check()) {
+            return redirect()->route('login')->with('error', 'Anda harus login terlebih dahulu.');
+        }
+
+        // ✅ ambil pendaftaran terbaru milik user
+        $pendaftaran = Pendaftaran::where('user_id', Auth::id())
+            ->latest()
+            ->first();
+
+        if (!$pendaftaran || !$pendaftaran->surat_balasan_pkl) {
+            return redirect()->route('home')->with('error', 'Surat balasan belum tersedia.');
+        }
+
+        // ✅ Prioritas: private
+        if (Storage::disk('private')->exists($pendaftaran->surat_balasan_pkl)) {
+            return response()->file(
+                Storage::disk('private')->path($pendaftaran->surat_balasan_pkl),
+                [
+                    'Content-Type' => 'application/pdf',
+                    'Content-Disposition' => 'inline; filename="surat_balasan.pdf"',
+                ]
+            );
+        }
+
+        // ✅ Fallback: public (file lama)
+        if (Storage::disk('public')->exists($pendaftaran->surat_balasan_pkl)) {
+            return response()->file(
+                Storage::disk('public')->path($pendaftaran->surat_balasan_pkl),
+                [
+                    'Content-Type' => 'application/pdf',
+                    'Content-Disposition' => 'inline; filename="surat_balasan.pdf"',
+                ]
+            );
+        }
+
+        return redirect()->route('home')->with('error', 'File surat balasan tidak ditemukan.');
+    }
+
+    /**
+     * Download Surat Balasan
+     */
+    public function downloadSuratBalasan()
+    {
+        if (!Auth::check()) {
+            return redirect()->route('login')->with('error', 'Anda harus login terlebih dahulu.');
+        }
+
+        $user = auth()->user();
+
+        // Ambil pendaftaran terbaru milik user
+        $pendaftaran = Pendaftaran::where('user_id', $user->id)->latest()->first();
+
+        if (!$pendaftaran || !$pendaftaran->surat_balasan_pkl) {
+            return redirect()->back()->with('error', 'Surat balasan belum tersedia.');
+        }
+
+        $path = $pendaftaran->surat_balasan_pkl;
+
+        $nama = $pendaftaran->nama_lengkap ?: $user->name;
+        $downloadName = 'Surat_Balasan_PKL_' . preg_replace('/\s+/', '_', $nama) . '.pdf';
+
+        // ✅ Prioritas: private (lebih aman)
+        if (Storage::disk('private')->exists($path)) {
+            return Storage::disk('private')->download($path, $downloadName);
+        }
+
+        // Fallback: public (file lama)
+        if (Storage::disk('public')->exists($path)) {
+            return Storage::disk('public')->download($path, $downloadName);
+        }
+
+        return redirect()->back()->with('error', 'File surat balasan tidak ditemukan.');
+    }
+
+    /**
+     * Halaman Surat Mitra Signed
+     */
     public function suratMitraSigned()
     {
         if (!Auth::check()) {
-            return redirect()->route('auth.google')->with('error', 'Anda harus login terlebih dahulu.');
+            return redirect()->route('login')->with('error', 'Anda harus login terlebih dahulu.');
         }
 
-        $pendaftaran = Pendaftaran::where('email', Auth::user()->email)->first();
+        // ✅ ambil pendaftaran terbaru
+        $pendaftaran = Pendaftaran::where('user_id', Auth::id())->latest()->first();
 
         if (!$pendaftaran) {
             return redirect()->route('home')->with('error', 'Anda harus mengisi pendaftaran terlebih dahulu sebelum dapat melihat surat mitra.');
         }
 
-        // Mark notification as read by setting session flag
+        // Mark notification as read
         session(['surat_mitra_visited_' . $pendaftaran->id => true]);
 
         $suratUploads = $pendaftaran->suratUploads;
@@ -153,7 +281,12 @@ class PendaftaranController extends Controller
 
     public function uploadSuratTandaTangan()
     {
-        $pendaftaran = Pendaftaran::where('email', Auth::user()->email)->first();
+        if (!Auth::check()) {
+            return redirect()->route('login')->with('error', 'Anda harus login terlebih dahulu.');
+        }
+
+        // ✅ ambil pendaftaran terbaru
+        $pendaftaran = Pendaftaran::where('user_id', Auth::id())->latest()->first();
 
         if (!$pendaftaran) {
             return redirect()->route('home')->with('error', 'Anda harus mengisi pendaftaran terlebih dahulu sebelum dapat mengupload surat.');
@@ -166,41 +299,49 @@ class PendaftaranController extends Controller
 
     public function storeSuratTandaTangan(Request $request)
     {
+        if (!Auth::check()) {
+            return redirect()->route('login')->with('error', 'Anda harus login terlebih dahulu.');
+        }
+
         $request->validate([
             'surat_tanda_tangan' => 'required|file|mimes:pdf|max:2048',
         ]);
 
-        $file = $request->file('surat_tanda_tangan');
-        $path = $file->store('surat_tanda_tangan', 'public');
+        // ✅ ambil pendaftaran terbaru
+        $pendaftaran = Pendaftaran::where('user_id', Auth::id())->latest()->first();
 
-        // Simpan ke pendaftaran user yang sedang login
-        $pendaftaran = Pendaftaran::where('email', Auth::user()->email)->first();
-        if ($pendaftaran) {
-            SuratUpload::create([
-                'pendaftaran_id' => $pendaftaran->id,
-                'file_path' => $path,
-                'file_name' => $file->getClientOriginalName(),
-                'file_type' => $file->getClientOriginalExtension(),
-                'file_size' => round($file->getSize() / 1024), // KB
-            ]);
+        if (!$pendaftaran) {
+            return redirect()->route('home')->with('error', 'Anda harus mengisi pendaftaran terlebih dahulu sebelum dapat mengupload surat.');
         }
+
+        $file = $request->file('surat_tanda_tangan');
+        $path = $file->store('surat_tanda_tangan', 'private');
+
+        SuratUpload::create([
+            'pendaftaran_id' => $pendaftaran->id,
+            'file_path' => $path,
+            'file_name' => $file->getClientOriginalName(),
+            'file_type' => $file->getClientOriginalExtension(),
+            'file_size' => (int) ceil($file->getSize() / 1024), // KB
+        ]);
 
         return redirect()->route('upload.surat.tanda.tangan')->with('success', 'Surat tanda tangan berhasil diupload.');
     }
 
     public function deleteSuratUpload($id)
     {
-        $suratUpload = SuratUpload::findOrFail($id);
+        if (!Auth::check()) {
+            return redirect()->route('login')->with('error', 'Anda harus login terlebih dahulu.');
+        }
 
-        // Pastikan user hanya bisa hapus surat upload miliknya sendiri
-        if ($suratUpload->pendaftaran->email !== Auth::user()->email) {
+        $suratUpload = SuratUpload::with('pendaftaran')->findOrFail($id);
+
+        // Anti-IDOR: cek kepemilikan via user_id, bukan email
+        if ((int) $suratUpload->pendaftaran->user_id !== (int) Auth::id()) {
             return redirect()->route('upload.surat.tanda.tangan')->with('error', 'Anda tidak memiliki akses untuk menghapus surat ini.');
         }
 
-        // Hapus file dari storage
-        Storage::disk('public')->delete($suratUpload->file_path);
-
-        // Hapus record dari database
+        Storage::disk('private')->delete($suratUpload->file_path);
         $suratUpload->delete();
 
         return redirect()->route('upload.surat.tanda.tangan')->with('success', 'Surat berhasil dihapus.');
@@ -211,33 +352,47 @@ class PendaftaranController extends Controller
         return view('pendaftaran.pendaftaran_berhasil');
     }
 
+    /**
+     * AJAX cek kuota
+     */
     public function checkQuota(Request $request)
     {
-        $date = $request->query('date');
+        try {
+            $date = $request->query('date');
 
-        if (!$date) {
-            return response()->json(['error' => 'Date parameter is required'], 400);
-        }
+            if (!$date) {
+                return response()->json(['error' => 'Tanggal wajib diisi'], 400);
+            }
 
-        $tanggalMulai = Carbon::parse($date);
-        $bulanTahun = $tanggalMulai->translatedFormat('F Y');
+            Carbon::setLocale('id');
+            $tanggalMulai = Carbon::parse($date);
+            $bulanTahun = $tanggalMulai->translatedFormat('F Y');
 
-        $kuota = Kuota::where('bulan', $bulanTahun)->first();
+            $kuota = Kuota::where('bulan', $bulanTahun)->first();
 
-        if (!$kuota) {
+            if (!$kuota) {
+                return response()->json([
+                    'available' => false,
+                    'message' => 'Kuota untuk bulan ' . $bulanTahun . ' belum dibuka oleh Admin.'
+                ]);
+            }
+
+            $sisa = (int) $kuota->available_slots;
+
+            if ($sisa > 0) {
+                return response()->json([
+                    'available' => true,
+                    'message' => "Tersedia " . $sisa . " slot untuk " . $bulanTahun,
+                    'sisa_kuota' => $sisa
+                ]);
+            }
+
             return response()->json([
                 'available' => false,
-                'message' => 'Kuota belum tersedia untuk periode ini'
+                'message' => "Mohon maaf, kuota untuk " . $bulanTahun . " sudah penuh."
             ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Terjadi kesalahan server.'], 500);
         }
-
-        $available = $kuota->isAvailable();
-
-        return response()->json([
-            'available' => $available,
-            'available_slots' => $kuota->available_slots,
-            'total_quota' => $kuota->jumlah_kuota,
-            'bulan' => $bulanTahun
-        ]);
     }
 }

@@ -9,23 +9,24 @@ use Symfony\Component\HttpFoundation\Response;
 
 class AdminAuthenticate
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!Auth::guard('admin')->check()) {
-            return redirect()->route('admin.login');
+        // ✅ Bisa lewat guard admin (tabel admins)
+        if (Auth::guard('admin')->check()) {
+            return $next($request);
         }
 
-        // Regenerate session ID to prevent session fixation attacks
-        if (!$request->session()->has('regenerated')) {
-            $request->session()->regenerate();
-            $request->session()->put('regenerated', true);
+        // ✅ Bisa lewat web user (tabel users) dengan role admin/super_admin
+        $user = Auth::user();
+        if ($user && in_array($user->role, ['admin', 'super_admin'])) {
+            return $next($request);
         }
 
-        return $next($request);
+        // Untuk request AJAX / API
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+
+        return redirect()->route('admin.login');
     }
 }

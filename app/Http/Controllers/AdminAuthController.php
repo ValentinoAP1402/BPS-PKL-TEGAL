@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Admin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use App\Models\User;
 
 class AdminAuthController extends Controller
 {
@@ -21,52 +21,94 @@ class AdminAuthController extends Controller
             'password' => 'required',
         ]);
 
-       if (Auth::guard('admin')->attempt($request->only('username', 'password'))) {
-        /** @var \App\Models\Admin $admin */
-        $admin = Auth::guard('admin')->user();
+        $remember = $request->boolean('remember');
 
-        // Check if admin is approved
-        if (!$admin->isApproved()) {
-            Auth::guard('admin')->logout();
-            return back()->withErrors(['username' => 'Akun Anda masih menunggu persetujuan Super Admin.']);
+        /*
+        |--------------------------------------------------------------------------
+        | 1️⃣ Coba login sebagai Super Admin (guard admin)
+        |--------------------------------------------------------------------------
+        */
+        if (Auth::guard('admin')->attempt($request->only('username', 'password'), $remember)) {
+
+            /** @var \App\Models\Admin $admin */
+            $admin = Auth::guard('admin')->user();
+
+            // ✅ anti session fixation
+            $request->session()->regenerate();
+
+            // cek approval (khusus akun admin/super admin lama)
+            if (method_exists($admin, 'isApproved') && !$admin->isApproved()) {
+                Auth::guard('admin')->logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return back()->withErrors([
+                    'username' => 'Akun Anda masih menunggu persetujuan Super Admin.'
+                ]);
+            }
+
+            return redirect()->route('admin.dashboard');
         }
 
-        $request->session()->regenerate();
-        return redirect()->route('admin.dashboard');
+        /*
+        |--------------------------------------------------------------------------
+        | 2️⃣ Coba login sebagai User biasa (guard web)
+        |--------------------------------------------------------------------------
+        */
+        $user = User::where('email', $request->username)
+            ->orWhere('name', $request->username)
+            ->first();
+
+        if ($user && Hash::check($request->password, $user->password)) {
+
+            // ❗ Pastikan rolenya admin
+            if ($user->role === 'admin') {
+
+                Auth::login($user, $remember);
+                $request->session()->regenerate();
+
+                return redirect()->route('admin.dashboard');
+            }
+
+            return back()->withErrors([
+                'username' => 'Akun ini bukan admin.'
+            ])->onlyInput('username');
+        }
+
+        return back()->withErrors([
+            'username' => 'Username atau password salah.'
+        ])->onlyInput('username');
     }
 
-        return back()->withErrors(['username' => 'Username atau password salah.']);
-    }
-
+    /**
+     * Register admin publik dimatikan.
+     */
     public function showRegisterForm()
     {
-        return view('admin.auth.register');
+        abort(404);
     }
 
     public function register(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'username' => 'required|string|max:255|unique:admins',
-            'email' => 'required|string|email|max:255|unique:admins',
-            'password' => 'required|string|min:8|confirmed',
-        ]);
-
-        Admin::create([
-            'name' => $request->name,
-            'username' => $request->username,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => 'admin', // Default role for new registrations
-            'status' => 'pending', // New admins need approval
-        ]);
-
-        return redirect()->route('admin.login')->with('success', 'Akun admin berhasil dibuat dan menunggu persetujuan Super Admin. Silakan login setelah disetujui.');
+        abort(404);
     }
 
-    public function logout()
+    public function logout(Request $request)
     {
-        Auth::guard('admin')->logout();
+        // 🔥 Logout super admin (guard admin)
+        if (Auth::guard('admin')->check()) {
+            Auth::guard('admin')->logout();
+        }
+
+        // 🔥 Logout admin dari user biasa (guard web)
+        if (Auth::check()) {
+            Auth::logout();
+        }
+
+        // 🔥 Bersihkan session total
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
         return redirect()->route('admin.login');
     }
 }

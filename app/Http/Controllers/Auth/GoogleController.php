@@ -23,6 +23,17 @@ class GoogleController extends Controller
             $findUser = User::where('google_id', $user->id)->first();
 
             if ($findUser) {
+                // Update user profile with latest Google data
+                $findUser->name = $user->name;
+                $findUser->email = $user->email;
+
+                // hanya update avatar jika belum pernah upload sendiri
+                if (!$findUser->avatar || str_starts_with($findUser->avatar, 'http')) {
+                    $findUser->avatar = $user->avatar;
+                }
+
+                $findUser->save();
+
                 // Ensure user has a role entry
                 if (!$findUser->userRole) {
                     \App\Models\UserRole::create([

@@ -1,26 +1,33 @@
-# TODO: Implement Admin Registration Approval System
+# TODO: Implement Automatic Deletion of Pending Registrations
 
-## Overview
+## Current Status
 
-Change the admin registration logic so that new admin accounts require Super Admin approval before they can access the dashboard.
+-   ✅ Created DeletePendingRegistrations command
+-   ✅ Implemented logic to delete pending registrations older than 3 days
+-   ✅ Scheduled the command to run daily in Kernel.php
 
 ## Tasks
 
--   [x] Add 'status' column to admins table migration
--   [x] Update Admin model to handle status
--   [x] Modify AdminAuthController::register() to create pending admin
--   [x] Update SuperAdminController to approve/reject pending admins
--   [x] Update user_roles/index.blade.php to show pending admins
--   [x] Add middleware to prevent pending admins from accessing dashboard
--   [x] Update routes to protect admin areas from pending admins
--   [x] Test the approval workflow
+-   ✅ Create artisan command for deleting pending registrations
+-   ✅ Add logic to delete registrations older than 3 days with status 'pending'
+-   ✅ Handle deletion of associated files (surat_keterangan_pkl, surat_tanda_tangan, etc.)
+-   ✅ Schedule the command to run daily
+-   ✅ Update TODO.md with progress
 
-## Files to Modify
+## Previous TODO: Implement Forgot Password Feature
 
--   database/migrations/ (new migration for status column)
--   app/Models/Admin.php
--   app/Http/Controllers/AdminAuthController.php
--   app/Http/Controllers/SuperAdminController.php
--   resources/views/admin/user_roles/index.blade.php
--   app/Http/Middleware/ (new middleware for pending admin check)
--   routes/web.php
+## Current Status
+
+-   ✅ Login view has functional "Lupa password?" link
+-   ✅ UserAuthController has password reset methods
+-   ✅ Routes for password reset added
+-   ✅ Views for forgot/reset password forms created
+
+## Tasks
+
+-   ✅ Add forgot password routes to web.php
+-   ✅ Add forgot password methods to UserAuthController
+-   ✅ Create forgot-password.blade.php view
+-   ✅ Create reset-password.blade.php view
+-   ✅ Update login.blade.php to link to forgot password
+-   ✅ Test the functionality
